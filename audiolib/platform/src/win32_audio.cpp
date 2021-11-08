@@ -86,6 +86,7 @@ namespace PlatformWin32 {
 
     u32 getDefaultAudioOutputDevice(_Out_ AudioDevice* device) {
         using Microsoft::WRL::ComPtr;
+        AudioDevice defaultDevice {0};
 
         ComPtr<IMMDeviceEnumerator> devEnum;
         HRESULT result = CoCreateInstance(__uuidof(MMDeviceEnumerator),
@@ -104,7 +105,6 @@ namespace PlatformWin32 {
         if(FAILED(result)) {
             goto exit;
         }
-        AudioDevice defaultDevice {0};
         if(!getDescFromEndpoint(endpoint.Get(),&defaultDevice)) {goto exit;}
         return 1;
         exit:
@@ -135,11 +135,11 @@ namespace PlatformWin32 {
 
     HRESULT AudioDeviceNotifiactionHandler::OnDeviceStateChanged(LPCWSTR pwstrDeviceId, DWORD dwNewState) {
         //TODO: Handle this
-        return S_OK
+        return S_OK;
     }
 
     HRESULT AudioDeviceNotifiactionHandler::OnPropertyValueChanged() {
         //TODO: Handle this
-        return S_OK
+        return S_OK;
     }
 }
