@@ -142,4 +142,89 @@ namespace PlatformWin32 {
         //TODO: Handle this
         return S_OK;
     }
+
+    u32 setupAudioPlayback(bool debug,
+                           _In_opt_ AudioDevice *device,
+                           _Out_ AudioPlaybackContext *context) {
+        IXAudio2* xAudioContext = nullptr;
+        IXAudio2MasteringVoice* masterV = nullptr;
+
+        u32 flags = debug? XAUDIO2_DEBUG_ENGINE : 0;
+        HRESULT result = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+        if(FAILED(result)) {goto exitFailure;}
+
+        result = XAudio2Create(&xAudioContext, flags, XAUDIO2_USE_DEFAULT_PROCESSOR);
+        if(FAILED(result) || xAudioContext == nullptr) {goto exitFailure;}
+
+        if(debug) {
+            XAUDIO2_DEBUG_CONFIGURATION config {0};
+            config.TraceMask = XAUDIO2_LOG_ERRORS | XAUDIO2_LOG_WARNINGS;
+            config.BreakMask = XAUDIO2_LOG_ERRORS;
+            config.LogFileline = true;
+            xAudioContext->SetDebugConfiguration(&config);
+        }
+
+        result = xAudioContext->CreateMasteringVoice(&masterV,
+                                                     XAUDIO2_DEFAULT_CHANNELS,
+                                                     XAUDIO2_DEFAULT_SAMPLERATE,
+                                                     0,
+                                                     (device != nullptr) ? device->deviceID : nullptr,
+                                                     nullptr,
+                                                     AudioCategory_Media);
+        if(FAILED(result) || masterV == nullptr) {goto exitFailure;}
+        context->master = masterV;
+        context->xaudio = xAudioContext;
+
+        return 1;
+
+        exitFailure: {
+            if(masterV) {masterV->DestroyVoice();}
+            if(xAudioContext) {xAudioContext->Release();}
+            return 0;
+        };
+    }
+
+    u32 setMasterVolume(AudioPlaybackContext *context, const float volume) {
+        if(volume > XAUDIO2_MAX_VOLUME_LEVEL || volume < -XAUDIO2_MAX_VOLUME_LEVEL) {return 0;}
+
+        HRESULT result = context->master->SetVolume(volume);
+        if(FAILED(result)) {return 0;}
+        return 1;
+    }
+
+    u32 submitSoundBuffer(_Inout_ AudioPlaybackContext *context,
+                          _In_ PCMAudioBufferInfo *buffer,
+                          _Out_ AudioHandle *handle) {
+
+        IXAudio2SourceVoice* source;
+        HRESULT result = context->xaudio->CreateSourceVoice(&source, &buffer->waveformat,
+                                                            0,
+                                                            XAUDIO2_DEFAULT_FREQ_RATIO,
+                                                            nullptr,
+                                                            nullptr,
+                                                            nullptr);
+        if(FAILED(result) || source == nullptr) {return 0;}
+
+        XAUDIO2_BUFFER xaudio2Buffer{};
+        xaudio2Buffer.AudioBytes = buffer->bufferSize;
+        xaudio2Buffer.pAudioData = buffer->rawDataBuffer;
+        xaudio2Buffer.Flags = XAUDIO2_END_OF_STREAM;
+
+        //TODO: Handle loop
+        AudioHandle _handle {0};
+        _handle.source = source;
+        _handle.audioInfo = *buffer;
+        _handle.loop = false;
+
+        result = source->SubmitSourceBuffer(&xaudio2Buffer);
+        if(FAILED(result)) {
+            source->DestroyVoice();
+            _handle.source = nullptr;
+
+            return 0;
+        }
+        *handle = _handle;
+        return 1;
+    }
+
 }

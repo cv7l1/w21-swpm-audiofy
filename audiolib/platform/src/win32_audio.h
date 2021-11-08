@@ -7,6 +7,8 @@
 #ifndef WIN32_LEAN_AND_MEAN
     #define WIN32_LEAN_AND_MEAN
 #endif
+//TODO: Include Stubs
+#include <sal.h>
 #include "types.h"
 #include <mfidl.h>
 #include <mmdeviceapi.h>
@@ -42,17 +44,17 @@ namespace PlatformWin32
         AudioDeviceNotifiactionHandler() : _cRef(1), _enumerator(nullptr) {}
         ~AudioDeviceNotifiactionHandler() { SAFE_RELEASE(_enumerator)}
 
-        ULONG STDMETHODCALLTYPE AddRef() {
+        ULONG STDMETHODCALLTYPE AddRef() override {
             return InterlockedIncrement(&_cRef);
         }
-        ULONG STDMETHODCALLTYPE Release() {
+        ULONG STDMETHODCALLTYPE Release() override {
             ULONG ulRef = InterlockedDecrement(&_cRef);
             if(!ulRef) {
                 delete this;
             }
             return ulRef;
         }
-        HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppvInterface) {
+        HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppvInterface) override {
             if(IID_IUnknown == riid) {
                 AddRef();
                 *ppvInterface = (IUnknown*)this;
@@ -92,6 +94,44 @@ namespace PlatformWin32
         list->devices = nullptr;
     }
 
+    struct AudioPlaybackContext {
+        IXAudio2* xaudio;
+        IXAudio2MasteringVoice* master;
+    };
+
+    struct PCMAudioBufferInfo {
+        WAVEFORMATEX waveformat;
+        u8* rawDataBuffer;
+        size_t bufferSize;
+    };
+
+    struct AudioHandle {
+        IXAudio2SourceVoice* source;
+        PCMAudioBufferInfo audioInfo;
+        bool loop;
+    };
+
+    u32
+    setupAudioPlayback(bool debug,
+                       _In_opt_ AudioDevice* device,
+                       _Out_ AudioPlaybackContext* context);
+    u32
+    setMasterVolume(_Inout_ AudioPlaybackContext* context,
+                    float volume);
+    u32
+    submitSoundBuffer(_Inout_ AudioPlaybackContext* context,
+                      _In_ PCMAudioBufferInfo* buffer,
+                      _Out_ AudioHandle* handle);
+
+    inline u32
+    playAudioBuffer(_In_ AudioPlaybackContext* context,
+                    _In_ AudioHandle* handle,
+                    bool loop) {
+        if(handle->source == nullptr) {return 0;}
+        HRESULT result = handle->source->Start();
+        if(FAILED(result)) {return 0;}
+        return 1;
+    }
 }
 
 
