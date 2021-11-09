@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include "win32_audio.h"
 #include "memUtil.h"
+#include "../../include/vorbisfile.h"
 
 namespace PlatformWin32 {
     constexpr u32 INVALID_PROP_DESCRIPTOR = 2;
@@ -237,5 +238,4 @@ namespace PlatformWin32 {
         *handle = _handle;
         return 1;
     }
-
 }
