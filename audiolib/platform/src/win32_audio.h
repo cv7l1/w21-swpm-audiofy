@@ -15,8 +15,37 @@
 #include <functiondiscoverykeys_devpkey.h>
 #include <wrl/client.h>
 #include <xaudio2.h>
+#include "type_traits"
+
 namespace PlatformWin32
 {
+    class ProcPtr {
+    public:
+        explicit ProcPtr(FARPROC ptr) : _ptr(ptr) {}
+        template <typename T, typename = std::enable_if_t<std::is_function_v<T>>>
+        explicit operator T * () const {
+            return reinterpret_cast<T *>(_ptr);
+        }
+
+    private:
+        FARPROC _ptr;
+    };
+
+    class DllHelper {
+    public:
+        explicit DllHelper(_In_z_ wchar_t* libPath) : _module(LoadLibraryW(libPath)) {}
+        ~ DllHelper() { FreeLibrary(_module);}
+
+        ProcPtr operator[] (_In_z_ char* proc_name) const {
+            return ProcPtr(GetProcAddress(_module, proc_name));
+        }
+        static HMODULE _parent_module;
+
+    private:
+        HMODULE _module;
+
+    };
+
     struct AudioDevice {
         wchar_t* deviceID;
         wchar_t* description;
