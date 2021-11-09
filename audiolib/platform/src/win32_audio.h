@@ -15,8 +15,8 @@
 #include <functiondiscoverykeys_devpkey.h>
 #include <wrl/client.h>
 #include <xaudio2.h>
-#include "type_traits"
-
+#include <xtr1common>
+#include <type_traits>
 namespace PlatformWin32
 {
     class ProcPtr {
