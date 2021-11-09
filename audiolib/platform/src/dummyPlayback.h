@@ -1,0 +1,8 @@
+//
+// Created by Jonathan on 09.11.2021.
+//
+
+#ifndef AUDIOFY_LIB_DUMMYPLAYBACK_H
+#define AUDIOFY_LIB_DUMMYPLAYBACK_H
+
+#endif //AUDIOFY_LIB_DUMMYPLAYBACK_H

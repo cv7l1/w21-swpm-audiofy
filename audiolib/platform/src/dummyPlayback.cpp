@@ -25,14 +25,7 @@ void fillBuffer(i16* buffer, size_t len, int sampleRate, int freq) {
     }
 }
 
-int WINAPI WinMain(
-        _In_ HINSTANCE  hinstance,
-        _In_ HINSTANCE  hPrevInstance,
-        _In_ LPSTR      lpCmdLine,
-        _In_ int        nShowCmd
-        ) {
-
-    OutputDebugStringW(L"Moin!\n");
+void sineWavePlaybackExample() {
     size_t bufferLen = 44100 * 2 * 8;
     i16* buffer = static_cast<i16 *>(malloc(bufferLen * sizeof(i16)));
     fillBuffer(buffer, bufferLen, 44100, 10000);
@@ -57,6 +50,33 @@ int WINAPI WinMain(
 
     PlatformWin32::submitSoundBuffer(&context, &bufferInfo, &audioHandle);
     PlatformWin32::playAudioBuffer(&context, &audioHandle, true);
+}
+
+void opusPlaybackExample() {
+    PlatformWin32::AudioPlaybackContext context {0};
+    PlatformWin32::setupAudioPlayback(true, nullptr, &context);
+
+    PlatformWin32::VorbisDecoderFileApi opusAPI;
+    PlatformWin32::PCMAudioBufferInfo bufferInfo {0};
+    PlatformWin32::decodeVorbisFile(&opusAPI, L"allTheTime.ogg", &bufferInfo);
+
+    PlatformWin32::AudioHandle audioHandle {0};
+    PlatformWin32::submitSoundBuffer(&context, &bufferInfo, &audioHandle);
+
+    PlatformWin32::playAudioBuffer(&context, &audioHandle, true);
+
+}
+int WINAPI WinMain(
+        _In_ HINSTANCE  hinstance,
+        _In_ HINSTANCE  hPrevInstance,
+        _In_ LPSTR      lpCmdLine,
+        _In_ int        nShowCmd
+        ) {
+
+    OutputDebugStringW(L"Moin!\n");
+    //Still kinda broken but who cares
+    //sineWavePlaybackExample();
+    opusPlaybackExample();
 
     for(;;) {
         Sleep(100);

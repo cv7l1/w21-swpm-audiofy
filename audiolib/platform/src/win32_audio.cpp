@@ -1,11 +1,20 @@
 #include <Windows.h>
 #include "win32_audio.h"
 #include "memUtil.h"
-#include "../../include/vorbisfile.h"
+#include <io.h>
 
 namespace PlatformWin32 {
-    constexpr u32 INVALID_PROP_DESCRIPTOR = 2;
+    u32 winFileHandleToCFileHandle(HANDLE *winFileHandle, FILE **cFileHandle) {
+         if(!winFileHandle) {return 0;}
+         int cDesc = _open_osfhandle(reinterpret_cast<intptr_t>(*winFileHandle), 0);
+         if(cDesc == -1) {
+             return 0;
+         }
+         *cFileHandle = _fdopen(cDesc, "r+b");
+         return 1;
+    }
 
+    constexpr u32 INVALID_PROP_DESCRIPTOR = 2;
     u32 getDescFromEndpoint(_In_ IMMDevice* endpoint,
                             _Out_ AudioDevice* _device) {
         using Microsoft::WRL::ComPtr;
@@ -45,6 +54,8 @@ namespace PlatformWin32 {
         using Microsoft::WRL::ComPtr;
         ComPtr<IMMDeviceEnumerator> devEnum;
         ComPtr<IMMDeviceCollection> devices;
+        AudioDevice* deviceList = nullptr;
+        u32 deviceCount = 0;
 
         HRESULT result = CoCreateInstance(__uuidof(MMDeviceEnumerator),
                                           nullptr,
@@ -59,12 +70,11 @@ namespace PlatformWin32 {
                                              &devices);
         if(FAILED(result)) {goto exit;}
 
-        u32 deviceCount = 0;
         result = devices->GetCount(&deviceCount);
         if(FAILED(result) || deviceCount == 0) {goto exit;}
 
         *numDevices = deviceCount;
-        auto* deviceList = new AudioDevice[deviceCount];
+        deviceList = new AudioDevice[deviceCount];
 
         for(u32 i = 0; i < deviceCount; ++i) {
             ComPtr<IMMDevice> endpoint;
@@ -236,6 +246,57 @@ namespace PlatformWin32 {
             return 0;
         }
         *handle = _handle;
+        return 1;
+    }
+
+    u32 decodeVorbisFile(_In_ VorbisDecoderFileApi *api,
+                          _In_z_ const wchar_t *filePath,
+                          _Out_ PCMAudioBufferInfo* buffer) {
+
+
+        OggVorbis_File vorbisFile;
+        HANDLE winFileHandle = CreateFileW(filePath, GENERIC_READ | GENERIC_WRITE,
+                                         FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING,
+                                         FILE_ATTRIBUTE_NORMAL, nullptr);
+        if(winFileHandle == INVALID_HANDLE_VALUE) {return 0;}
+        FILE* cFile;
+        auto result = winFileHandleToCFileHandle(&winFileHandle, &cFile);
+        if(!result) { CloseHandle(winFileHandle);}
+        result = api->ov_open_callbacks(cFile, &vorbisFile, NULL, 0, OV_CALLBACKS_NOCLOSE);
+        if(result < 0) {return 0;}
+
+        vorbis_info* info = api->ov_info(&vorbisFile, -1);
+        u64 pcmSize = api->ov_pcm_total(&vorbisFile, -1);
+
+        size_t blockSize = 4096;
+        bool eof = false;
+        i16 *bufferRawData = static_cast<i16 *>(malloc(pcmSize * sizeof(i16) * 2));
+        int currentSection;
+        u64 bytesRead = 0;
+
+        i8* dest = reinterpret_cast<i8 *>(bufferRawData);
+        while(!eof) {
+            u64 ret = api->ov_read(&vorbisFile, reinterpret_cast<char*>(dest),
+                                   blockSize, 0, 2, 1, &currentSection);
+            if(ret == 0) {
+                eof = true;
+            } else {
+                bytesRead += ret;
+                dest += ret;
+            }
+        }
+        WAVEFORMATEX wf {0};
+        wf.wFormatTag = WAVE_FORMAT_PCM;
+        wf.nChannels = info->channels;
+        wf.nSamplesPerSec = info->rate;
+        wf.wBitsPerSample = 16;
+        wf.nBlockAlign = (wf.nChannels * wf.wBitsPerSample) / 8;
+        wf.nAvgBytesPerSec = wf.nSamplesPerSec * wf.nBlockAlign;
+        wf.cbSize = 0;
+
+        buffer->waveformat = wf;
+        buffer->rawDataBuffer = reinterpret_cast<u8 *>(bufferRawData);
+        buffer->bufferSize = pcmSize * sizeof(i16) * 2;
         return 1;
     }
 }
