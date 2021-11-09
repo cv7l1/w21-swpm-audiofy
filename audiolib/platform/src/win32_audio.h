@@ -2,12 +2,12 @@
 // Created by Jonathan on 08.11.2021.
 //
 
-#ifndef AUDIOFY_LIB_WIN32_AUDIO_H
-#define AUDIOFY_LIB_WIN32_AUDIO_H
+#pragma once
 #ifndef WIN32_LEAN_AND_MEAN
     #define WIN32_LEAN_AND_MEAN
 #endif
 //TODO: Include Stubs
+
 #include <sal.h>
 #include "types.h"
 #include <mfidl.h>
@@ -85,14 +85,6 @@ namespace PlatformWin32
     /// Frees an audio device
     void freeAudioDevice(_In_ AudioDevice* device);
 
-    void freeAudioDeviceList(_In_ AudioDeviceList* list) {
-        for(int i = 0; i<list->deviceCount; ++i) {
-            freeAudioDevice(&list->devices[i]);
-        }
-        delete[] list->devices;
-        list->deviceCount = 0;
-        list->devices = nullptr;
-    }
 
     struct AudioPlaybackContext {
         IXAudio2* xaudio;
@@ -135,4 +127,3 @@ namespace PlatformWin32
 }
 
 
-#endif //AUDIOFY_LIB_WIN32_AUDIO_H

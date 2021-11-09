@@ -114,7 +114,9 @@ namespace PlatformWin32 {
         };
 
     }
-    void freeAudioDevice(_In_ AudioDevice *device) {
+    void freeAudioDevice(_In_ AudioDevice *device);
+
+    void freeAudioDevice(AudioDevice *device) {
         CoTaskMemFree(device->deviceID);
         device->deviceID = nullptr;
         PropVariantClear(&device->var);
@@ -141,6 +143,15 @@ namespace PlatformWin32 {
     HRESULT AudioDeviceNotifiactionHandler::OnPropertyValueChanged() {
         //TODO: Handle this
         return S_OK;
+    }
+
+    void freeAudioDeviceList(_In_ AudioDeviceList* list) {
+        for(int i = 0; i<list->deviceCount; ++i) {
+            freeAudioDevice(&list->devices[i]);
+        }
+        delete[] list->devices;
+        list->deviceCount = 0;
+        list->devices = nullptr;
     }
 
     u32 setupAudioPlayback(bool debug,
@@ -196,7 +207,7 @@ namespace PlatformWin32 {
                           _In_ PCMAudioBufferInfo *buffer,
                           _Out_ AudioHandle *handle) {
 
-        IXAudio2SourceVoice* source;
+        IXAudio2SourceVoice* source = nullptr;
         HRESULT result = context->xaudio->CreateSourceVoice(&source, &buffer->waveformat,
                                                             0,
                                                             XAUDIO2_DEFAULT_FREQ_RATIO,
@@ -209,7 +220,7 @@ namespace PlatformWin32 {
         xaudio2Buffer.AudioBytes = buffer->bufferSize;
         xaudio2Buffer.pAudioData = buffer->rawDataBuffer;
         xaudio2Buffer.Flags = XAUDIO2_END_OF_STREAM;
-
+        xaudio2Buffer.LoopCount = XAUDIO2_LOOP_INFINITE;
         //TODO: Handle loop
         AudioHandle _handle {0};
         _handle.source = source;
