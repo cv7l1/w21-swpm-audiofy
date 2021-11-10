@@ -64,6 +64,21 @@ void opusPlaybackExample() {
     PlatformWin32::submitSoundBuffer(&context, &bufferInfo, &audioHandle);
 
     PlatformWin32::playAudioBuffer(&context, &audioHandle, true);
+}
+
+void wmfPlaybackExample() {
+    PlatformWin32::mediaFoundationSetup();
+
+    PlatformWin32::PCMAudioBufferInfo audioBuffer {0};
+    PlatformWin32::mediaFoundationDecodeFile(L"allTheTime.mp3", &audioBuffer);
+
+    PlatformWin32::AudioPlaybackContext context {0};
+    PlatformWin32::setupAudioPlayback(true, nullptr, &context);
+
+    PlatformWin32::AudioHandle audioHandle {0};
+    PlatformWin32::submitSoundBuffer(&context, &audioBuffer, &audioHandle);
+
+    PlatformWin32::playAudioBuffer(&context, &audioHandle, true);
 
 }
 int WINAPI WinMain(
@@ -76,7 +91,8 @@ int WINAPI WinMain(
     OutputDebugStringW(L"Moin!\n");
     //Still kinda broken but who cares
     //sineWavePlaybackExample();
-    opusPlaybackExample();
+    //opusPlaybackExample();
+    wmfPlaybackExample();
 
     for(;;) {
         Sleep(100);
