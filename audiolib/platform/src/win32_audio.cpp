@@ -221,7 +221,7 @@ namespace PlatformWin32 {
         IXAudio2SourceVoice* source = nullptr;
         HRESULT result = context->xaudio->CreateSourceVoice(&source, &buffer->waveformat,
                                                             0,
-                                                            XAUDIO2_DEFAULT_FREQ_RATIO,
+                                                            XAUDIO2_MAX_FREQ_RATIO,
                                                             nullptr,
                                                             nullptr,
                                                             nullptr);
@@ -297,6 +297,146 @@ namespace PlatformWin32 {
         buffer->waveformat = wf;
         buffer->rawDataBuffer = reinterpret_cast<u8 *>(bufferRawData);
         buffer->bufferSize = pcmSize * sizeof(i16) * 2;
+        return 1;
+    }
+
+    u32 mediaFoundationOpenEncodedAudioFile(const wchar_t *path, MediaFoundationAudioDecoder *decoder) {
+        IMFSourceReader* reader;
+        HRESULT result = MFCreateSourceReaderFromURL(path, nullptr, &reader);
+        if(FAILED(result) || reader == nullptr) {
+            OutputDebugStringW(L"Unable to open audio file from URL");
+            return 0;
+        }
+        IMFMediaType* uncompressedAudioType = nullptr;
+        IMFMediaType* partialType = nullptr;
+        result = reader->SetStreamSelection(MF_SOURCE_READER_ALL_STREAMS, false);
+        if(FAILED(result)) {
+            OutputDebugStringW(L"Unable to select stream");
+            return 0;
+        }
+        result = reader->SetStreamSelection(MF_SOURCE_READER_FIRST_AUDIO_STREAM, true);
+        if(FAILED(result)) {
+            OutputDebugStringW(L"Unable to select stream");
+            return 0;
+        }
+        result = MFCreateMediaType(&partialType);
+        if(FAILED(result)) {
+            OutputDebugStringW(L"Unable to create media type");
+        }
+
+        //NOTE: I'll add error handling proper later. Usually nothing bad should happen here...
+        MFCreateMediaType(&partialType);
+        partialType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
+        partialType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_PCM);
+        reader->SetCurrentMediaType(MF_SOURCE_READER_FIRST_AUDIO_STREAM,
+                                    nullptr, partialType);
+        reader->GetCurrentMediaType(MF_SOURCE_READER_FIRST_AUDIO_STREAM, &uncompressedAudioType);
+        reader->SetStreamSelection(MF_SOURCE_READER_FIRST_AUDIO_STREAM, TRUE);
+        WAVEFORMATEX* waveFormat;
+        size_t waveSize = 0;
+        result = MFCreateWaveFormatExFromMFMediaType(uncompressedAudioType,
+                                                     reinterpret_cast<WAVEFORMATEX **>(&waveFormat),
+                                                     &waveSize,
+                                                     MFWaveFormatExConvertFlag_Normal);
+        if(FAILED(result) || waveFormat == nullptr) {
+            OutputDebugStringW(L"Unable to retrieve wave format form media type\n");
+            return 0;
+        }
+        decoder->reader = reader;
+        decoder->mediaType = uncompressedAudioType;
+        decoder->wf = reinterpret_cast<WAVEFORMATEX*>(waveFormat);
+        return 1;
+    }
+
+    u32 mediaFoundationGetAudioDuration(MediaFoundationAudioDecoder *decoder, u64 *durationMS) {
+        PROPVARIANT prop;
+        HRESULT result = decoder->reader->GetPresentationAttribute(MF_SOURCE_READER_MEDIASOURCE, MF_PD_DURATION, &prop);
+        if(FAILED(result)) {return 0;}
+
+        const MFTIME ONE_SECOND = 10000000;
+        const LONG   ONE_MSEC = 1000;
+
+        u64 duration = prop.uhVal.QuadPart / (ONE_SECOND / ONE_MSEC);
+        *durationMS = duration;
+        return 1;
+    }
+
+    u32
+    mediaFoundationDecodeSample(MediaFoundationAudioDecoder *decoder, u8 *dest, size_t destBufferSize, u32 maxAudioData,
+                                u32 offset, u32 *dataWritten, bool *eof) {
+        IMFMediaBuffer* buffer = nullptr;
+        IMFSample* sample = nullptr;
+
+        DWORD flags;
+        HRESULT result = decoder->reader->ReadSample(
+                MF_SOURCE_READER_FIRST_AUDIO_STREAM,
+                0,
+                nullptr,
+                &flags,
+                nullptr,
+                &sample
+                );
+        if(FAILED(result) || sample == nullptr) {
+            OutputDebugStringW(L"MF: Unable to read sample\n");
+            return 0;
+        }
+        result = sample->ConvertToContiguousBuffer(&buffer);
+        if(FAILED(result) || sample == nullptr) {
+            OutputDebugStringW(L"Unable to get sample buffer from reader \n");
+            sample->Release();
+            return 0;
+        }
+        DWORD bufferReadCount;
+        u8* audioData = nullptr;
+
+        result = buffer->Lock(&audioData, nullptr, &bufferReadCount);
+        if(FAILED(result) || audioData == nullptr) {
+            OutputDebugStringW(L"Unable to get audio data from buffer\n");
+            sample->Release();
+            buffer->Release();
+            return 0;
+        }
+
+        bool endOfStream = flags & MF_SOURCE_READERF_ENDOFSTREAM;
+        if(bufferReadCount >= maxAudioData || (bufferReadCount + offset) >= destBufferSize) {
+            buffer->Unlock();
+
+            sample->Release();
+            buffer->Release();
+            *eof = true;
+            return 0;
+        }
+
+        memcpy(dest + offset , audioData, bufferReadCount);
+        result = buffer->Unlock();
+        if(FAILED(result)) {return 0;}
+        sample->Release();
+        buffer->Release();
+        *dataWritten = bufferReadCount;
+        *eof = endOfStream;
+
+        return 1;
+    }
+
+    u32 mediaFoundationDecodeFile(const wchar_t *path, PCMAudioBufferInfo *bufferOut) {
+        MediaFoundationAudioDecoder decoder {0};
+        mediaFoundationOpenEncodedAudioFile(path, &decoder);
+
+        bool _eof = false;
+        u64 duration = 0;
+        mediaFoundationGetAudioDuration(&decoder, &duration);
+        size_t bufferSize = decoder.wf->nAvgBytesPerSec * (u64)(duration / 1000);
+
+        i16* buffer = static_cast<i16 *>(malloc(bufferSize));
+        u64 offset = 0;
+        u32 dataWritten = 0;
+        while(!_eof) {
+            mediaFoundationDecodeSample(&decoder, reinterpret_cast<u8 *>(buffer), bufferSize, bufferSize, offset, &dataWritten, &_eof);
+            offset += dataWritten;
+        }
+        bufferOut->bufferSize = bufferSize;
+        bufferOut->rawDataBuffer = reinterpret_cast<u8 *>(buffer);
+        bufferOut->waveformat = *decoder.wf;
         return 1;
     }
 }

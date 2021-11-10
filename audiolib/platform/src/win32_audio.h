@@ -8,8 +8,13 @@
 #endif
 //TODO: Include Stubs
 
+#pragma comment(lib, "runtimeobject.lib")
+
 #include <sal.h>
 #include "types.h"
+#include<mfidl.h>
+#include<mfreadwrite.h>
+#include <mfapi.h>
 #include <mfidl.h>
 #include <mmdeviceapi.h>
 #include <functiondiscoverykeys_devpkey.h>
@@ -178,6 +183,34 @@ namespace PlatformWin32
     u32 decodeVorbisFile(_In_ VorbisDecoderFileApi *api,
                           _In_z_ const wchar_t* filePath,
                           _Out_ PCMAudioBufferInfo* buffer);
+
+    struct MediaFoundationAudioDecoder {
+        IMFSourceReader* reader;
+        IMFMediaType* mediaType;
+        WAVEFORMATEX* wf;
+    };
+
+    inline u32 mediaFoundationSetup() {
+        if(FAILED(MFStartup(MF_VERSION))) {return 0;}
+        return 1;
+    }
+
+    u32 mediaFoundationOpenEncodedAudioFile(_In_z_ const wchar_t* path,
+                                            _Out_ MediaFoundationAudioDecoder* decoder);
+
+    u32 mediaFoundationGetAudioDuration(_In_ MediaFoundationAudioDecoder* decoder,
+                                        _Out_ u64* durationMS);
+    u32 mediaFoundationDecodeSample(_In_ MediaFoundationAudioDecoder* decoder,
+                                    _Out_writes_bytes_all_(dataWritten) u8* dest,
+                                    size_t destBufferSize,
+                                    u32 maxAudioData,
+                                    u32 offset,
+                                    _Out_ u32* dataWritten,
+                                    bool* eof);
+
+
+    u32 mediaFoundationDecodeFile(const wchar_t* path,
+                                  _Out_ PCMAudioBufferInfo* bufferOut);
 }
 
 
