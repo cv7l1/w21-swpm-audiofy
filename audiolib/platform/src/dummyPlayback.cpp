@@ -48,7 +48,7 @@ void sineWavePlaybackExample() {
     bufferInfo.waveformat = wf;
     PlatformWin32::AudioHandle audioHandle {0};
 
-    PlatformWin32::submitSoundBuffer(&context, &bufferInfo, &audioHandle);
+    PlatformWin32::submitSoundBuffer(&context, &bufferInfo, &audioHandle, true);
     PlatformWin32::playAudioBuffer(&context, &audioHandle, true);
 }
 
@@ -61,7 +61,7 @@ void opusPlaybackExample() {
     PlatformWin32::decodeVorbisFile(&opusAPI, L"allTheTime.ogg", &bufferInfo);
 
     PlatformWin32::AudioHandle audioHandle {0};
-    PlatformWin32::submitSoundBuffer(&context, &bufferInfo, &audioHandle);
+    PlatformWin32::submitSoundBuffer(&context, &bufferInfo, &audioHandle, true);
 
     PlatformWin32::playAudioBuffer(&context, &audioHandle, true);
 }
@@ -76,7 +76,7 @@ void wmfPlaybackExample() {
     PlatformWin32::setupAudioPlayback(true, nullptr, &context);
 
     PlatformWin32::AudioHandle audioHandle {0};
-    PlatformWin32::submitSoundBuffer(&context, &audioBuffer, &audioHandle);
+    PlatformWin32::submitSoundBuffer(&context, &audioBuffer, &audioHandle, true);
 
     PlatformWin32::playAudioBuffer(&context, &audioHandle, true);
 
@@ -91,8 +91,8 @@ int WINAPI WinMain(
     OutputDebugStringW(L"Moin!\n");
     //Still kinda broken but who cares
     //sineWavePlaybackExample();
-    //opusPlaybackExample();
-    wmfPlaybackExample();
+    opusPlaybackExample();
+    //wmfPlaybackExample();
 
     for(;;) {
         Sleep(100);

@@ -26,6 +26,35 @@
 
 namespace PlatformWin32
 {
+    enum AudiolibError {
+        AUDIOLIB_OK,
+        AUDIOLIB_COINIT_FAILURE,
+        AUDIOLIB_ERROR_UNKNOWN,
+        AUDIOLIB_XAUDIO_CONTEXT_CREATION,
+        AUDIOLIB_XAUDIO_VOICE_CREATION,
+        AUDIOLIB_XAUDIO_SOURCE_CREATION,
+        AUDIOLIB_XAUDIO_SUBMIT_BUFFER,
+        AUDIOLIB_XAUDIO_GENERIC_ERROR,
+        AUDIOLIB_OGG_FAILURE,
+        AUDIOLIB_INVALID_PARAMETER,
+        AUDIOLIB_OUTOFMEMORY,
+        AUDIOLIB_IO_ERROR,
+        AUDIOLIB_ENDPOINT_RETRIEVAL,
+        AUDIOLIB_ENDPOINT_NODEVICE,
+        AUDIOLIB_ENDPOINT_INFO_ERROR,
+        AUDIOLIB_ENDPOINT_INVALID_PROP_DESC,
+        AUDIOLIB_MF_OPENURL,
+        AUDIOLIB_MF_GENERIC,
+        AUDIOLIB_MF_WF,
+        AUDIOLIB_MF_READMAX,
+    };
+
+    enum AudiolibDeviceRole {
+        AUDIOLIB_ROLE_PLAYBACK = eRender,
+        AUDIOLIB_ROLE_RECORDING = eCapture,
+        AUDIOLIB_ROLE_ALL = eAll,
+    };
+
     class ProcPtr {
     public:
         explicit ProcPtr(FARPROC ptr) : _ptr(ptr) {}
@@ -109,30 +138,47 @@ namespace PlatformWin32
         HRESULT STDMETHODCALLTYPE OnPropertyValueChanged();
     };
 
-     u32 winFileHandleToCFileHandle(_Inout_ HANDLE* winFileHandle,
-                                    _Out_ FILE** cFileHandle);
+     AudiolibError winFileHandleToCFileHandle(
+             _Inout_ _Notnull_  HANDLE* winFileHandle,
+             _Out_              FILE** cFileHandle);
+
 
 
     /// Retrieves all audio output devices currently available
     /// \param devices OUT: Pointer to all available devices, free with freeAudioDeviceList
     /// \param numDevices OUT: Pointer to the number of devices found
     /// \return Non-Zero on success
-    u32 getAvailableAudioOutputDevices(
+    AudiolibError getAvailableAudioOutputDevices(
             _Out_ AudioDeviceList* devices,
+            _In_ AudiolibDeviceRole,
             _Out_ u32* numDevices
     );
 
-    u32 getDefaultAudioOutputDevice(_Out_ AudioDevice* device);
+    AudiolibError getDefaultAudioOutputDevice(_Out_ AudioDevice* device);
 
     /// Frees an audio device
     void freeAudioDevice(_In_ AudioDevice* device);
 
+
+    enum DecoderType {
+        DECODER_PCM,
+        DECODER_WMF,
+        DECODER_OGG
+    };
 
     struct AudioPlaybackContext {
         IXAudio2* xaudio;
         IXAudio2MasteringVoice* master;
     };
 
+    struct AudioStreamContext {
+        IXAudio2SourceVoice* source;
+        WAVEFORMATEX decodedMediaTypeWF;
+        DecoderType decoderType;
+        union FileContext {
+
+        } fileContext;
+    };
     struct PCMAudioBufferInfo {
         WAVEFORMATEX waveformat;
         u8* rawDataBuffer;
@@ -145,32 +191,26 @@ namespace PlatformWin32
         bool loop;
     };
 
-    u32 setupAudioPlayback(
+    AudiolibError setupAudioPlayback(
             bool debug,
             _In_opt_ AudioDevice*           device,
             _Out_    AudioPlaybackContext*  context
             );
 
-    u32 setMasterVolume(
+    AudiolibError setMasterVolume(
             _Inout_ AudioPlaybackContext*   context,
                     float                   volume);
 
-    u32 submitSoundBuffer(
+    AudiolibError submitSoundBuffer(
             _Inout_ AudioPlaybackContext*   context,
             _In_    PCMAudioBufferInfo*     buffer,
-            _Out_   AudioHandle*            handle);
+            _Out_   AudioHandle*            handle,
+                    bool                    loop);
 
-    inline
-    u32 playAudioBuffer(
-            _In_    AudioPlaybackContext*   context,
-            _In_    AudioHandle*            handle,
-                    bool                    loop) {
-
-        if(handle->source == nullptr) {return 0;}
-        HRESULT result = handle->source->Start();
-        if(FAILED(result)) {return 0;}
-        return 1;
-    }
+    AudiolibError playAudioBuffer(
+            _In_ _Notnull_   AudioPlaybackContext*   context,
+            _In_ _Notnull_   AudioHandle*            handle,
+                             bool                    loop);
 
     struct VorbisDecoderFileApi {
         DllHelper _dll{L"vorbisfile.dll"};
@@ -180,9 +220,9 @@ namespace PlatformWin32
         decltype(ov_read)* ov_read = _dll["ov_read"];
     };
 
-    u32 decodeVorbisFile(_In_ VorbisDecoderFileApi *api,
-                          _In_z_ const wchar_t* filePath,
-                          _Out_ PCMAudioBufferInfo* buffer);
+    AudiolibError decodeVorbisFile( _In_ _Notnull_ VorbisDecoderFileApi *api,
+                                    _In_z_ _Notnull_ const wchar_t* filePath,
+                                    _Out_ PCMAudioBufferInfo* buffer);
 
     struct MediaFoundationAudioDecoder {
         IMFSourceReader* reader;
@@ -190,17 +230,17 @@ namespace PlatformWin32
         WAVEFORMATEX* wf;
     };
 
-    inline u32 mediaFoundationSetup() {
-        if(FAILED(MFStartup(MF_VERSION))) {return 0;}
-        return 1;
+    inline AudiolibError mediaFoundationSetup() {
+        if(FAILED(MFStartup(MF_VERSION))) {return AUDIOLIB_MF_GENERIC;}
+        return AUDIOLIB_OK;
     }
 
-    u32 mediaFoundationOpenEncodedAudioFile(_In_z_ const wchar_t* path,
+    AudiolibError mediaFoundationOpenEncodedAudioFile(_In_z_ const wchar_t* path,
                                             _Out_ MediaFoundationAudioDecoder* decoder);
 
-    u32 mediaFoundationGetAudioDuration(_In_ MediaFoundationAudioDecoder* decoder,
+    AudiolibError mediaFoundationGetAudioDuration(_In_ MediaFoundationAudioDecoder* decoder,
                                         _Out_ u64* durationMS);
-    u32 mediaFoundationDecodeSample(_In_ MediaFoundationAudioDecoder* decoder,
+    AudiolibError mediaFoundationDecodeSample(_In_ MediaFoundationAudioDecoder* decoder,
                                     _Out_writes_bytes_all_(dataWritten) u8* dest,
                                     size_t destBufferSize,
                                     u32 maxAudioData,
@@ -209,7 +249,7 @@ namespace PlatformWin32
                                     bool* eof);
 
 
-    u32 mediaFoundationDecodeFile(const wchar_t* path,
+    AudiolibError mediaFoundationDecodeFile(const wchar_t* path,
                                   _Out_ PCMAudioBufferInfo* bufferOut);
 }
 
