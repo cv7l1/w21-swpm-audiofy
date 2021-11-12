@@ -563,16 +563,12 @@ namespace PlatformWin32 {
         u32 currentDiskReadBufffer = 0;
         u32 currentPosition = 0;
 
-        u64 sampleCount = sound->vorbisContext->ov_pcm_total(sound->file, -1);
-        size_t dataSize = sampleCount * sizeof(i16) * 2;
         bool eof = false;
         int currentSection;
-        u8* currentBuffer = buffers;
         while(!eof) {
             if(SUCCEEDED(result)) {
                 u64 bytesRead = 0;
-                //RETARDED
-                eof = false;
+
                 u64 ret = sound->vorbisContext->ov_read(sound->file, reinterpret_cast<char *>(buffers + (sound->individualStreamingBufferSize * currentDiskReadBufffer)),
                                                             sound->individualStreamingBufferSize,
                                                             0, 2, 1 ,
@@ -585,8 +581,6 @@ namespace PlatformWin32 {
                 }
 
                 XAUDIO2_VOICE_STATE state;
-                //sound->source->GetState(&state);
-                //printf("%d\n", state.BuffersQueued);
 
                 while(sound->source->GetState(&state), state.BuffersQueued >= sound->streamingBufferCount - 1) {
                     WaitForSingleObject(sound->streamingContext->hBufferEndEvent, INFINITE);
@@ -597,11 +591,16 @@ namespace PlatformWin32 {
                 buf.pAudioData = reinterpret_cast<const BYTE *>(buffers + (sound->individualStreamingBufferSize * currentDiskReadBufffer));
                 if(eof) {
                     if(sound->loop) {
-                        eof = false;
-                        sound->vorbisContext->ov_pcm_seek(sound->file,0);
+                        if(sound->vorbisContext->ov_raw_seek(sound->file,0) == 0) {
+                            eof = false;
+                            continue;
+                        } else {
+                            break;
+                        }
                     }
                     else {
                         buf.Flags = XAUDIO2_END_OF_STREAM;
+                        if(bytesRead <= 0) {break;}
                     }
                 }
                 sound->source->SubmitSourceBuffer(&buf);
@@ -613,7 +612,10 @@ namespace PlatformWin32 {
         while(sound->source->GetState(&state), state.BuffersQueued > 0) {
             WaitForSingleObjectEx(sound->streamingContext->hBufferEndEvent, INFINITE, TRUE);
         }
+        //TODO: Free the stuff
         free(buffers);
+
+        //BAD!
         delete sound;
         return 0;
     }
@@ -670,7 +672,6 @@ namespace PlatformWin32 {
 
         DWORD threadID;
         auto streamThead = CreateThread(nullptr, 0, vorbisStreamThread, streamContext, 0, &threadID);
-        if(streamThead == nullptr) { DebugNotifyErrorLoud(L"Get fucked");}
         return AUDIOLIB_OK;
     }
 
