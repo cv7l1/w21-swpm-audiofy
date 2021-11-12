@@ -77,6 +77,19 @@ void wmfPlaybackExample() {
     PlatformWin32::playAudioBuffer(&context, &audioHandle, true);
 
 }
+
+void oggStreamPlaybackExample() {
+    PlatformWin32::AudioPlaybackContext context {0};
+    PlatformWin32::setupAudioPlayback(true, nullptr, &context);
+
+    PlatformWin32::VorbisDecoderFileApi opusAPI;
+    PlatformWin32::streamVorbisFileFromDisk(&context, &opusAPI, L"allTheTime.ogg");
+
+    for(;;) {
+        Sleep(100);
+    }
+
+}
 int WINAPI WinMain(
         _In_ HINSTANCE  hinstance,
         _In_ HINSTANCE  hPrevInstance,
@@ -87,10 +100,7 @@ int WINAPI WinMain(
     OutputDebugStringW(L"Moin!\n");
     //Still kinda broken but who cares
     //sineWavePlaybackExample();
-    opusPlaybackExample();
+    //opusPlaybackExample();
     //wmfPlaybackExample();
-
-    for(;;) {
-        Sleep(100);
-    }
+    oggStreamPlaybackExample();
 }

@@ -5,6 +5,9 @@
 #pragma once
 #ifndef WIN32_LEAN_AND_MEAN
     #define WIN32_LEAN_AND_MEAN
+
+class VorbisDecoderFileApi;
+
 #endif
 //TODO: Include Stubs
 
@@ -20,6 +23,7 @@
 #include <functiondiscoverykeys_devpkey.h>
 #include <wrl/client.h>
 #include <xaudio2.h>
+#include <utility>
 #include <xtr1common>
 #include <type_traits>
 #include "../../include/vorbisfile.h"
@@ -96,7 +100,6 @@ namespace PlatformWin32
         AudioDevice* devices;
     };
 
-
 #define SAFE_RELEASE(punk)  \
     if ((punk) != NULL)  \
     { (punk)->Release(); (punk) = NULL; }
@@ -171,18 +174,76 @@ namespace PlatformWin32
         IXAudio2MasteringVoice* master;
     };
 
+
+    struct AudioFormatInfo {
+        u32 numberOfChannels;
+        u32 sampleRate;     //Samples per second
+        size_t bitsPerSample;
+    };
+
+    struct VorbisDecoderFileApi {
+        DllHelper _dll{L"vorbisfile.dll"};
+        decltype(ov_open_callbacks)* ov_open_callbacks = _dll["ov_open_callbacks"];
+        decltype(ov_info)* ov_info = _dll["ov_info"];
+        decltype(ov_pcm_total)* ov_pcm_total = _dll["ov_pcm_total"];
+        decltype(ov_read)* ov_read = _dll["ov_read"];
+    };
+    struct StreamingVoiceContext : public IXAudio2VoiceCallback{
+        HANDLE hBufferEndEvent;
+        StreamingVoiceContext() : hBufferEndEvent(CreateEvent(nullptr, false, false, nullptr)) {}
+
+        STDMETHODIMP_(void) OnBufferEnd(void* pBufferContext) override {SetEvent(hBufferEndEvent);}
+
+        STDMETHODIMP_(void) OnVoiceProcessingPassEnd() override {}
+
+        STDMETHODIMP_(void)OnBufferStart(void* pBufferContext) override {}
+
+        STDMETHODIMP_(void)OnVoiceError(void* pBufferContext, HRESULT Error) override {}
+
+        STDMETHODIMP_(void)OnStreamEnd() override {}
+
+        STDMETHODIMP_(void)OnLoopEnd(void *pBufferContext) override {}
+
+        STDMETHODIMP_(void)OnVoiceProcessingPassStart(UINT32 BytesRequired) override {};
+
+    };
+    struct VorbisAudioStreamContext {
+        VorbisAudioStreamContext(
+                IXAudio2SourceVoice* source,
+                StreamingVoiceContext *streamContext,
+                AudioPlaybackContext* xcontext,
+                PlatformWin32::VorbisDecoderFileApi* fileapi,
+                OggVorbis_File file,
+
+                u32 streamingBufferCount,
+                size_t individualStreamingBufferSize,
+                bool loop
+                )
+        : source(source), streamingContext(streamContext),
+          XAudioContext(xcontext), vorbisContext(fileapi),
+          file(file), streamingBufferCount(streamingBufferCount),
+          individualStreamingBufferSize(individualStreamingBufferSize),
+          loop(loop) {}
+
+        IXAudio2SourceVoice* source;
+        StreamingVoiceContext* streamingContext;
+        AudioPlaybackContext* XAudioContext;
+        AudioFormatInfo decodedAudioFormat = {0};
+        VorbisDecoderFileApi* vorbisContext;
+        OggVorbis_File file;
+
+        u32 streamingBufferCount;
+        size_t individualStreamingBufferSize;
+        bool loop;
+
+    };
+
     struct AudioStreamContext {
         IXAudio2SourceVoice* source;
         WAVEFORMATEX decodedMediaTypeWF;
         DecoderType decoderType;
         union FileContext {
         } fileContext;
-    };
-
-    struct AudioFormatInfo {
-        u32 numberOfChannels;
-        u32 sampleRate;     //Samples per second
-        size_t bitsPerSample;
     };
 
     struct PCMAudioBufferInfo {
@@ -196,6 +257,7 @@ namespace PlatformWin32
         PCMAudioBufferInfo audioInfo;
         bool loop;
     };
+
 
     AudiolibError setupAudioPlayback(
             bool debug,
@@ -218,13 +280,6 @@ namespace PlatformWin32
             _In_ _Notnull_   AudioHandle*            handle,
                              bool                    loop);
 
-    struct VorbisDecoderFileApi {
-        DllHelper _dll{L"vorbisfile.dll"};
-        decltype(ov_open_callbacks)* ov_open_callbacks = _dll["ov_open_callbacks"];
-        decltype(ov_info)* ov_info = _dll["ov_info"];
-        decltype(ov_pcm_total)* ov_pcm_total = _dll["ov_pcm_total"];
-        decltype(ov_read)* ov_read = _dll["ov_read"];
-    };
 
     AudiolibError decodeVorbisFile( _In_ _Notnull_ VorbisDecoderFileApi *api,
                                     _In_z_ _Notnull_ const wchar_t* filePath,
@@ -257,6 +312,10 @@ namespace PlatformWin32
 
     AudiolibError mediaFoundationDecodeFile(const wchar_t* path,
                                   _Out_ PCMAudioBufferInfo* bufferOut);
+
+    AudiolibError streamVorbisFileFromDisk(AudioPlaybackContext* player,
+                                           VorbisDecoderFileApi* api,
+                                           const wchar_t* filePath);
 }
 
 

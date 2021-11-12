@@ -2,8 +2,8 @@
 #include "win32_audio.h"
 #include "memUtil.h"
 #include <io.h>
-
 namespace PlatformWin32 {
+#define min(a, b) (((a) < (b)) ? (a) : (b))
     /*! \brief Utility function to retrieve a FILE* from a HANDLE
      \param [in] winFileHandle Pointer to a HANDLE created using OpenFile
      \param [out] cFileHandle Resulting File Pointer
@@ -20,6 +20,13 @@ namespace PlatformWin32 {
          return AUDIOLIB_OK;
     }
 
+    void DebugNotifyErrorLoud(const wchar_t* message) {
+        MessageBoxW(nullptr, message, nullptr, MB_HELP | MB_OK);
+    }
+
+    void DebugHaltAndCatchFire() {
+        PostMessageW(nullptr, WM_CLOSE, 0, 0);
+    }
     /*!
      *
      * @brief Retrieve information about an audio device, including the GUID
@@ -542,4 +549,121 @@ namespace PlatformWin32 {
         bufferOut->audioInfo = info;
         return AUDIOLIB_OK;
     }
+
+    //The DebugHaltAndCatchFire() calls may or may not actually do anthing here. windows is weird.
+    DWORD WINAPI vorbisStreamThread(LPVOID lParam) {
+        auto* sound = static_cast<VorbisAudioStreamContext*>(lParam);
+        if(!sound) {DebugHaltAndCatchFire();}
+        u16* buffers = static_cast<u16 *>(malloc(
+                sound->individualStreamingBufferSize * sound->streamingBufferCount * sizeof(i16)));
+
+        if(buffers == nullptr) {DebugHaltAndCatchFire();}
+        auto result = sound->source->Start();
+
+        u32 currentDiskReadBufffer = 0;
+        u32 currentPosition = 0;
+
+        u64 sampleCount = sound->vorbisContext->ov_pcm_total(&sound->file, -1);
+        size_t dataSize = sampleCount * sizeof(i16) * 2;
+        bool eof = false;
+        int currentSection;
+        u16* currentBuffer = reinterpret_cast<u16 *>(buffers);
+        while(currentPosition < dataSize) {
+            if(SUCCEEDED(result)) {
+                u16* dest = reinterpret_cast<u16 *>(currentBuffer + (currentDiskReadBufffer * sound->individualStreamingBufferSize));
+
+                //NOTE: This may or may not actually turn out to be incredibly(!) retarded
+                u64 ret = sound->vorbisContext->ov_read(&sound->file, reinterpret_cast<char *>(dest),
+                                                       sound->individualStreamingBufferSize,
+                                                       0, 2, 1 ,
+                                                       &currentSection);
+                if(ret == 0) {
+                    eof = true;
+                } else {
+                    currentPosition += ret;
+                }
+
+                XAUDIO2_VOICE_STATE state;
+                while(sound->source->GetState(&state), state.BuffersQueued >= sound->streamingBufferCount - 1) {
+                    WaitForSingleObject(sound->streamingContext->hBufferEndEvent, INFINITE);
+                }
+                XAUDIO2_BUFFER buf = {0};
+                buf.AudioBytes = sound->individualStreamingBufferSize;
+                buf.pAudioData = reinterpret_cast<const BYTE *>(currentBuffer);
+                if(currentPosition >= dataSize) {
+                    if(sound->loop) {
+                        currentPosition = 0;
+                    }
+                    else {
+                        buf.Flags = XAUDIO2_END_OF_STREAM;
+                    }
+                }
+                sound->source->SubmitSourceBuffer(&buf);
+                currentDiskReadBufffer++;
+                currentDiskReadBufffer = (currentDiskReadBufffer % sound->streamingBufferCount);
+            }
+        }
+        XAUDIO2_VOICE_STATE state;
+        while(sound->source->GetState(&state), state.BuffersQueued > 0) {
+            WaitForSingleObjectEx(sound->streamingContext->hBufferEndEvent, INFINITE, TRUE);
+        }
+        free(buffers);
+        delete sound;
+        return 0;
+    }
+
+    AudiolibError streamVorbisFileFromDisk(AudioPlaybackContext* player, VorbisDecoderFileApi* api,
+                                               _In_z_ const wchar_t* filePath) {
+        OggVorbis_File vorbisFile;
+        HANDLE winFileHandle = CreateFileW(filePath, GENERIC_READ | GENERIC_WRITE,
+                                           FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                           nullptr, OPEN_EXISTING,
+                                           FILE_ATTRIBUTE_NORMAL, nullptr);
+        if(winFileHandle == INVALID_HANDLE_VALUE) {return AUDIOLIB_IO_ERROR;}
+        FILE* cFile;
+        auto result = winFileHandleToCFileHandle(&winFileHandle, &cFile);
+        if(result != AUDIOLIB_OK || cFile == nullptr) {
+            CloseHandle(winFileHandle);
+            return result;
+        }
+
+        int oggResult = api->ov_open_callbacks(cFile, &vorbisFile, nullptr, 0, OV_CALLBACKS_NOCLOSE);
+
+        if( oggResult < 0) {
+            fclose(cFile);
+            return AUDIOLIB_OGG_FAILURE;
+        }
+
+        IXAudio2SourceVoice* source;
+        auto context = new StreamingVoiceContext();
+
+        AudioFormatInfo format {};
+
+        vorbis_info* oggInfo = api->ov_info(&vorbisFile, -1);
+        format.numberOfChannels = oggInfo->channels;
+        format.bitsPerSample = 16;
+        format.sampleRate = oggInfo->rate;
+
+        auto wf = audioInfoToWF(&format);
+
+        auto winResult = player->xaudio->CreateSourceVoice(&source, &wf, 0, XAUDIO2_MAX_FREQ_RATIO, context, nullptr,
+                                                           nullptr);
+        if(FAILED(winResult)) {return AUDIOLIB_XAUDIO_GENERIC_ERROR;}
+        auto* streamContext = new VorbisAudioStreamContext(
+                    source,
+                    context,
+                    player,
+                    api,
+                    vorbisFile,
+                    3,
+                    4096,
+                    true
+                );
+
+        DWORD threadID;
+        auto streamThead = CreateThread(nullptr, 0, vorbisStreamThread, streamContext, 0, &threadID);
+        if(streamThead == nullptr) { DebugNotifyErrorLoud(L"Get fucked");}
+        return AUDIOLIB_OK;
+    }
+
 }
