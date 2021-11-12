@@ -187,6 +187,8 @@ namespace PlatformWin32
         decltype(ov_info)* ov_info = _dll["ov_info"];
         decltype(ov_pcm_total)* ov_pcm_total = _dll["ov_pcm_total"];
         decltype(ov_read)* ov_read = _dll["ov_read"];
+        decltype(ov_pcm_seek)* ov_pcm_seek = _dll["ov_read"];
+
     };
     struct StreamingVoiceContext : public IXAudio2VoiceCallback{
         HANDLE hBufferEndEvent;

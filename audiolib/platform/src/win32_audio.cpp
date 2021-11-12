@@ -554,8 +554,8 @@ namespace PlatformWin32 {
     DWORD WINAPI vorbisStreamThread(LPVOID lParam) {
         auto* sound = static_cast<VorbisAudioStreamContext*>(lParam);
         if(!sound) {DebugHaltAndCatchFire();}
-        u16* buffers = static_cast<u16 *>(malloc(
-                sound->individualStreamingBufferSize * sound->streamingBufferCount * sizeof(i16)));
+        u8* buffers = static_cast<u8 *>(malloc(
+                sound->individualStreamingBufferSize * sound->streamingBufferCount));
 
         if(buffers == nullptr) {DebugHaltAndCatchFire();}
         auto result = sound->source->Start();
@@ -567,20 +567,25 @@ namespace PlatformWin32 {
         size_t dataSize = sampleCount * sizeof(i16) * 2;
         bool eof = false;
         int currentSection;
-        u16* currentBuffer = reinterpret_cast<u16 *>(buffers);
-        while(currentPosition < dataSize) {
+        u8* currentBuffer = buffers;
+        while(!eof) {
             if(SUCCEEDED(result)) {
-                u16* dest = reinterpret_cast<u16 *>(currentBuffer + (currentDiskReadBufffer * sound->individualStreamingBufferSize));
-
+                u8* dest = currentBuffer + (currentDiskReadBufffer * sound->individualStreamingBufferSize);
                 //NOTE: This may or may not actually turn out to be incredibly(!) retarded
-                u64 ret = sound->vorbisContext->ov_read(&sound->file, reinterpret_cast<char *>(dest),
-                                                       sound->individualStreamingBufferSize,
-                                                       0, 2, 1 ,
-                                                       &currentSection);
-                if(ret == 0) {
-                    eof = true;
-                } else {
-                    currentPosition += ret;
+                u64 bytesRead = 0;
+                //RETARDED
+                eof = false;
+                while(!eof && bytesRead < sound->individualStreamingBufferSize) {
+                    u64 ret = sound->vorbisContext->ov_read(&sound->file, reinterpret_cast<char *>(dest),
+                                                            sound->individualStreamingBufferSize,
+                                                            0, 2, 1 ,
+                                                            &currentSection);
+                    if(ret == 0) {
+                        eof = true;
+                    } else {
+                        bytesRead += ret;
+                        currentPosition += bytesRead;
+                    }
                 }
 
                 XAUDIO2_VOICE_STATE state;
@@ -589,10 +594,12 @@ namespace PlatformWin32 {
                 }
                 XAUDIO2_BUFFER buf = {0};
                 buf.AudioBytes = sound->individualStreamingBufferSize;
-                buf.pAudioData = reinterpret_cast<const BYTE *>(currentBuffer);
-                if(currentPosition >= dataSize) {
+
+                buf.pAudioData = reinterpret_cast<const BYTE *>(currentBuffer + (currentDiskReadBufffer * sound->individualStreamingBufferSize));
+                if(eof) {
                     if(sound->loop) {
-                        currentPosition = 0;
+                        eof = false;
+                        sound->vorbisContext->ov_pcm_seek(&sound->file,0);
                     }
                     else {
                         buf.Flags = XAUDIO2_END_OF_STREAM;
