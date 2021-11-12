@@ -570,32 +570,31 @@ namespace PlatformWin32 {
         u8* currentBuffer = buffers;
         while(!eof) {
             if(SUCCEEDED(result)) {
-                u8* dest = currentBuffer + (currentDiskReadBufffer * sound->individualStreamingBufferSize);
-                //NOTE: This may or may not actually turn out to be incredibly(!) retarded
                 u64 bytesRead = 0;
                 //RETARDED
                 eof = false;
-                while(!eof && bytesRead < sound->individualStreamingBufferSize) {
-                    u64 ret = sound->vorbisContext->ov_read(&sound->file, reinterpret_cast<char *>(dest),
+                u64 ret = sound->vorbisContext->ov_read(&sound->file, reinterpret_cast<char *>(buffers + (sound->individualStreamingBufferSize * currentDiskReadBufffer)),
                                                             sound->individualStreamingBufferSize,
                                                             0, 2, 1 ,
                                                             &currentSection);
-                    if(ret == 0) {
-                        eof = true;
-                    } else {
-                        bytesRead += ret;
-                        currentPosition += bytesRead;
-                    }
+                if(ret == 0) {
+                    eof = true;
+                } else {
+                    bytesRead += ret;
+                    currentPosition += bytesRead;
                 }
 
                 XAUDIO2_VOICE_STATE state;
+                //sound->source->GetState(&state);
+                //printf("%d\n", state.BuffersQueued);
+
                 while(sound->source->GetState(&state), state.BuffersQueued >= sound->streamingBufferCount - 1) {
                     WaitForSingleObject(sound->streamingContext->hBufferEndEvent, INFINITE);
                 }
-                XAUDIO2_BUFFER buf = {0};
-                buf.AudioBytes = sound->individualStreamingBufferSize;
 
-                buf.pAudioData = reinterpret_cast<const BYTE *>(currentBuffer + (currentDiskReadBufffer * sound->individualStreamingBufferSize));
+                XAUDIO2_BUFFER buf = {0};
+                buf.AudioBytes = bytesRead;
+                buf.pAudioData = reinterpret_cast<const BYTE *>(buffers + (sound->individualStreamingBufferSize * currentDiskReadBufffer));
                 if(eof) {
                     if(sound->loop) {
                         eof = false;
@@ -662,7 +661,7 @@ namespace PlatformWin32 {
                     player,
                     api,
                     vorbisFile,
-                    3,
+                    5,
                     4096,
                     true
                 );
