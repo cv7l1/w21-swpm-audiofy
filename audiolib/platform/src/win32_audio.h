@@ -215,7 +215,7 @@ namespace PlatformWin32
                 StreamingVoiceContext *streamContext,
                 AudioPlaybackContext* xcontext,
                 PlatformWin32::VorbisDecoderFileApi* fileapi,
-                OggVorbis_File file,
+                OggVorbis_File* file,
 
                 u32 streamingBufferCount,
                 size_t individualStreamingBufferSize,
@@ -232,7 +232,7 @@ namespace PlatformWin32
         AudioPlaybackContext* XAudioContext;
         AudioFormatInfo decodedAudioFormat = {0};
         VorbisDecoderFileApi* vorbisContext;
-        OggVorbis_File file;
+        OggVorbis_File* file;
 
         u32 streamingBufferCount;
         size_t individualStreamingBufferSize;

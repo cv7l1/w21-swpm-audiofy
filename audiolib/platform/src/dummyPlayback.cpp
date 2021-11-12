@@ -79,15 +79,12 @@ void wmfPlaybackExample() {
 }
 
 void oggStreamPlaybackExample() {
-    PlatformWin32::AudioPlaybackContext context {0};
-    PlatformWin32::setupAudioPlayback(true, nullptr, &context);
+    auto context = new PlatformWin32::AudioPlaybackContext;
+    PlatformWin32::setupAudioPlayback(true, nullptr, context);
 
-    PlatformWin32::VorbisDecoderFileApi opusAPI;
-    PlatformWin32::streamVorbisFileFromDisk(&context, &opusAPI, L"allTheTime.ogg");
+    auto opusAPI = new PlatformWin32::VorbisDecoderFileApi;
+    PlatformWin32::streamVorbisFileFromDisk(context, opusAPI, L"allTheTime.ogg");
 
-    for(;;) {
-        Sleep(100);
-    }
 
 }
 int WINAPI WinMain(
@@ -103,4 +100,8 @@ int WINAPI WinMain(
     //opusPlaybackExample();
     //wmfPlaybackExample();
     oggStreamPlaybackExample();
+
+    for(;;) {
+        Sleep(100);
+    }
 }

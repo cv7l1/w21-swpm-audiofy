@@ -563,7 +563,7 @@ namespace PlatformWin32 {
         u32 currentDiskReadBufffer = 0;
         u32 currentPosition = 0;
 
-        u64 sampleCount = sound->vorbisContext->ov_pcm_total(&sound->file, -1);
+        u64 sampleCount = sound->vorbisContext->ov_pcm_total(sound->file, -1);
         size_t dataSize = sampleCount * sizeof(i16) * 2;
         bool eof = false;
         int currentSection;
@@ -573,7 +573,7 @@ namespace PlatformWin32 {
                 u64 bytesRead = 0;
                 //RETARDED
                 eof = false;
-                u64 ret = sound->vorbisContext->ov_read(&sound->file, reinterpret_cast<char *>(buffers + (sound->individualStreamingBufferSize * currentDiskReadBufffer)),
+                u64 ret = sound->vorbisContext->ov_read(sound->file, reinterpret_cast<char *>(buffers + (sound->individualStreamingBufferSize * currentDiskReadBufffer)),
                                                             sound->individualStreamingBufferSize,
                                                             0, 2, 1 ,
                                                             &currentSection);
@@ -598,7 +598,7 @@ namespace PlatformWin32 {
                 if(eof) {
                     if(sound->loop) {
                         eof = false;
-                        sound->vorbisContext->ov_pcm_seek(&sound->file,0);
+                        sound->vorbisContext->ov_pcm_seek(sound->file,0);
                     }
                     else {
                         buf.Flags = XAUDIO2_END_OF_STREAM;
@@ -620,11 +620,13 @@ namespace PlatformWin32 {
 
     AudiolibError streamVorbisFileFromDisk(AudioPlaybackContext* player, VorbisDecoderFileApi* api,
                                                _In_z_ const wchar_t* filePath) {
-        OggVorbis_File vorbisFile;
+        auto vorbisFile = new OggVorbis_File;
+
         HANDLE winFileHandle = CreateFileW(filePath, GENERIC_READ | GENERIC_WRITE,
                                            FILE_SHARE_READ | FILE_SHARE_WRITE,
                                            nullptr, OPEN_EXISTING,
                                            FILE_ATTRIBUTE_NORMAL, nullptr);
+
         if(winFileHandle == INVALID_HANDLE_VALUE) {return AUDIOLIB_IO_ERROR;}
         FILE* cFile;
         auto result = winFileHandleToCFileHandle(&winFileHandle, &cFile);
@@ -633,7 +635,7 @@ namespace PlatformWin32 {
             return result;
         }
 
-        int oggResult = api->ov_open_callbacks(cFile, &vorbisFile, nullptr, 0, OV_CALLBACKS_NOCLOSE);
+        int oggResult = api->ov_open_callbacks(cFile, vorbisFile, nullptr, 0, OV_CALLBACKS_NOCLOSE);
 
         if( oggResult < 0) {
             fclose(cFile);
@@ -643,14 +645,14 @@ namespace PlatformWin32 {
         IXAudio2SourceVoice* source;
         auto context = new StreamingVoiceContext();
 
-        AudioFormatInfo format {};
+        auto format = new AudioFormatInfo;
 
-        vorbis_info* oggInfo = api->ov_info(&vorbisFile, -1);
-        format.numberOfChannels = oggInfo->channels;
-        format.bitsPerSample = 16;
-        format.sampleRate = oggInfo->rate;
+        vorbis_info* oggInfo = api->ov_info(vorbisFile, -1);
+        format->numberOfChannels = oggInfo->channels;
+        format->bitsPerSample = 16;
+        format->sampleRate = oggInfo->rate;
 
-        auto wf = audioInfoToWF(&format);
+        auto wf = audioInfoToWF(format);
 
         auto winResult = player->xaudio->CreateSourceVoice(&source, &wf, 0, XAUDIO2_MAX_FREQ_RATIO, context, nullptr,
                                                            nullptr);
@@ -662,7 +664,7 @@ namespace PlatformWin32 {
                     api,
                     vorbisFile,
                     5,
-                    4096,
+                    4096 * 5,
                     true
                 );
 
