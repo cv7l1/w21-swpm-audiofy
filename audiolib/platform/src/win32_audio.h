@@ -176,11 +176,17 @@ namespace PlatformWin32
         WAVEFORMATEX decodedMediaTypeWF;
         DecoderType decoderType;
         union FileContext {
-
         } fileContext;
     };
+
+    struct AudioFormatInfo {
+        u32 numberOfChannels;
+        u32 sampleRate;     //Samples per second
+        size_t bitsPerSample;
+    };
+
     struct PCMAudioBufferInfo {
-        WAVEFORMATEX waveformat;
+        AudioFormatInfo audioInfo;
         u8* rawDataBuffer;
         size_t bufferSize;
     };

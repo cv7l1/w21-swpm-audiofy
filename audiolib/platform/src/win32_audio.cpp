@@ -230,6 +230,18 @@ namespace PlatformWin32 {
         return AUDIOLIB_OK;
     }
 
+    WAVEFORMATEX audioInfoToWF(_In_ AudioFormatInfo* info) {
+        WAVEFORMATEX wf {0};
+        wf.wFormatTag = WAVE_FORMAT_PCM;
+        wf.nSamplesPerSec = info->sampleRate;
+        wf.wBitsPerSample = info->bitsPerSample;
+        wf.nChannels = info->numberOfChannels;
+        wf.nBlockAlign = (wf.nChannels * wf.wBitsPerSample) / 8;
+        wf.nAvgBytesPerSec = wf.nSamplesPerSec * wf.nBlockAlign;
+        wf.cbSize = 0;
+        return wf;
+    }
+
     AudiolibError submitSoundBuffer(_Inout_ AudioPlaybackContext *context,
                           _In_ PCMAudioBufferInfo *buffer,
                           _Out_ AudioHandle *handle,
@@ -237,7 +249,9 @@ namespace PlatformWin32 {
 
         if(context == nullptr || buffer == nullptr) {return AUDIOLIB_INVALID_PARAMETER;}
         IXAudio2SourceVoice* source = nullptr;
-        HRESULT result = context->xaudio->CreateSourceVoice(&source, &buffer->waveformat,
+        WAVEFORMATEX wf = audioInfoToWF(&buffer->audioInfo);
+
+        HRESULT result = context->xaudio->CreateSourceVoice(&source, &wf,
                                                             0,
                                                             XAUDIO2_MAX_FREQ_RATIO,
                                                             nullptr,
@@ -295,7 +309,7 @@ namespace PlatformWin32 {
         }
 
         int oggResult = api->ov_open_callbacks(cFile, &vorbisFile, nullptr, 0, OV_CALLBACKS_NOCLOSE);
-        if(result < 0) {
+        if(oggResult < 0) {
             fclose(cFile);
             return AUDIOLIB_OGG_FAILURE;
         }
@@ -343,7 +357,12 @@ namespace PlatformWin32 {
         wf.nAvgBytesPerSec = wf.nSamplesPerSec * wf.nBlockAlign;
         wf.cbSize = 0;
 
-        buffer->waveformat = wf;
+        AudioFormatInfo audioInfo{0};
+        audioInfo.sampleRate = info->rate;
+        audioInfo.bitsPerSample = 16;
+        audioInfo.numberOfChannels = info->channels;
+
+        buffer->audioInfo = audioInfo;
         buffer->rawDataBuffer = reinterpret_cast<u8 *>(bufferRawData);
         buffer->bufferSize = pcmSize * sizeof(i16) * 2;
         return AUDIOLIB_OK;
@@ -515,7 +534,12 @@ namespace PlatformWin32 {
         }
         bufferOut->bufferSize = bufferSize;
         bufferOut->rawDataBuffer = reinterpret_cast<u8 *>(buffer);
-        bufferOut->waveformat = *decoder.wf;
+        AudioFormatInfo info {0};
+        info.bitsPerSample = decoder.wf->wBitsPerSample;
+        info.sampleRate = decoder.wf->nSamplesPerSec;
+        info.numberOfChannels= decoder.wf->nChannels;
+
+        bufferOut->audioInfo = info;
         return AUDIOLIB_OK;
     }
 }

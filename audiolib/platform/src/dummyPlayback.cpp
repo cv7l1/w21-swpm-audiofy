@@ -36,16 +36,12 @@ void sineWavePlaybackExample() {
     bufferInfo.bufferSize = bufferLen;
     bufferInfo.rawDataBuffer = reinterpret_cast<u8 *>(buffer);
 
-    WAVEFORMATEX wf {0};
-    wf.wFormatTag = WAVE_FORMAT_PCM;
-    wf.nSamplesPerSec = 44100;
-    wf.wBitsPerSample = 16;
-    wf.nChannels = 2;
-    wf.nBlockAlign = (wf.nChannels * wf.wBitsPerSample) / 8;
-    wf.nAvgBytesPerSec = wf.nSamplesPerSec * wf.nBlockAlign;
-    wf.cbSize = 0;
+    PlatformWin32::AudioFormatInfo audioFormat {0};
+    audioFormat.numberOfChannels = 2;
+    audioFormat.sampleRate = 44100;
+    audioFormat.bitsPerSample = 16;
 
-    bufferInfo.waveformat = wf;
+    bufferInfo.audioInfo = audioFormat;
     PlatformWin32::AudioHandle audioHandle {0};
 
     PlatformWin32::submitSoundBuffer(&context, &bufferInfo, &audioHandle, true);
