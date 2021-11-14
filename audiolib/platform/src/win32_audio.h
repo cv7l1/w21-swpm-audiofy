@@ -237,7 +237,6 @@ namespace PlatformWin32
         u32 streamingBufferCount;
         size_t individualStreamingBufferSize;
         bool loop;
-
     };
 
     struct AudioStreamContext {
@@ -293,6 +292,17 @@ namespace PlatformWin32
         WAVEFORMATEX* wf;
     };
 
+    struct WMFReaderStreamContext {
+        IXAudio2SourceVoice* source;
+        StreamingVoiceContext* streamContext;
+        AudioPlaybackContext* xcontext;
+        MediaFoundationAudioDecoder* decoder;
+        size_t individualStreamingBufferSize;
+        u32 streamingBufferCount;
+        bool loop;
+
+    };
+
     inline AudiolibError mediaFoundationSetup() {
         if(FAILED(MFStartup(MF_VERSION))) {return AUDIOLIB_MF_GENERIC;}
         return AUDIOLIB_OK;
@@ -318,6 +328,8 @@ namespace PlatformWin32
     AudiolibError streamVorbisFileFromDisk(AudioPlaybackContext* player,
                                            VorbisDecoderFileApi* api,
                                            const wchar_t* filePath);
+
+    AudiolibError streamWMFFileFromDisk(AudioPlaybackContext* player, const wchar_t* filePath);
 }
 
 

@@ -66,7 +66,7 @@ void wmfPlaybackExample() {
     PlatformWin32::mediaFoundationSetup();
 
     PlatformWin32::PCMAudioBufferInfo audioBuffer {0};
-    PlatformWin32::mediaFoundationDecodeFile(L"allTheTime.mp3", &audioBuffer);
+    PlatformWin32::mediaFoundationDecodeFile(L"a.mp3", &audioBuffer);
 
     PlatformWin32::AudioPlaybackContext context {0};
     PlatformWin32::setupAudioPlayback(true, nullptr, &context);
@@ -84,9 +84,16 @@ void oggStreamPlaybackExample() {
 
     auto opusAPI = new PlatformWin32::VorbisDecoderFileApi;
     PlatformWin32::streamVorbisFileFromDisk(context, opusAPI, L"spider.ogg");
-
-
 }
+
+void wmfStreamPlaybackExample() {
+    PlatformWin32::mediaFoundationSetup();
+    auto context = new PlatformWin32::AudioPlaybackContext;
+    PlatformWin32::setupAudioPlayback(true, nullptr, context);
+
+    PlatformWin32::streamWMFFileFromDisk(context, L"big shot.mp3");
+}
+
 int WINAPI WinMain(
         _In_ HINSTANCE  hinstance,
         _In_ HINSTANCE  hPrevInstance,
@@ -99,7 +106,8 @@ int WINAPI WinMain(
     //sineWavePlaybackExample();
     //opusPlaybackExample();
     //wmfPlaybackExample();
-    oggStreamPlaybackExample();
+    //oggStreamPlaybackExample();
+    wmfStreamPlaybackExample();
 
     for(;;) {
         Sleep(100);

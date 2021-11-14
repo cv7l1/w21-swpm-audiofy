@@ -2,7 +2,9 @@
 #include "win32_audio.h"
 #include "memUtil.h"
 #include <io.h>
+#include <propvarutil.h>
 namespace PlatformWin32 {
+
 #define min(a, b) (((a) < (b)) ? (a) : (b))
     /*! \brief Utility function to retrieve a FILE* from a HANDLE
      \param [in] winFileHandle Pointer to a HANDLE created using OpenFile
@@ -382,10 +384,11 @@ namespace PlatformWin32 {
 
         IMFSourceReader* reader = nullptr;
         HRESULT result = MFCreateSourceReaderFromURL(path, nullptr, &reader);
+
         if(FAILED(result) || reader == nullptr) {
-            OutputDebugStringW(L"Unable to open audio file from URL");
             return AUDIOLIB_MF_OPENURL;
         }
+
         IMFMediaType* uncompressedAudioType = nullptr;
         IMFMediaType* partialType = nullptr;
         result = reader->SetStreamSelection(MF_SOURCE_READER_ALL_STREAMS, false);
@@ -515,7 +518,7 @@ namespace PlatformWin32 {
 
     AudiolibError mediaFoundationDecodeFile(const wchar_t *path, PCMAudioBufferInfo *bufferOut) {
         AudiolibError aResult;
-        MediaFoundationAudioDecoder decoder {0};
+        MediaFoundationAudioDecoder decoder {nullptr};
         aResult = mediaFoundationOpenEncodedAudioFile(path, &decoder);
         if(aResult != AUDIOLIB_OK) {return aResult;}
 
@@ -608,7 +611,8 @@ namespace PlatformWin32 {
                 currentDiskReadBufffer = (currentDiskReadBufffer % sound->streamingBufferCount);
             }
         }
-        XAUDIO2_VOICE_STATE state;
+
+        XAUDIO2_VOICE_STATE state {0};
         while(sound->source->GetState(&state), state.BuffersQueued > 0) {
             WaitForSingleObjectEx(sound->streamingContext->hBufferEndEvent, INFINITE, TRUE);
         }
@@ -675,4 +679,130 @@ namespace PlatformWin32 {
         return AUDIOLIB_OK;
     }
 
+    DWORD WINAPI wmfStreamThread(LPVOID lParam) {
+        auto* sound = static_cast<WMFReaderStreamContext*>(lParam);
+        if(!sound) {DebugHaltAndCatchFire();}
+        u32 bytesPerSecond = MFGetAttributeUINT32(sound->decoder->mediaType, MF_MT_AUDIO_AVG_BYTES_PER_SECOND,0);
+        u32 blockSize = MFGetAttributeUINT32(sound->decoder->mediaType, MF_MT_AUDIO_BLOCK_ALIGNMENT, 0);
+
+        u64 initialIndividualBufferSize = 500000;
+
+        u8* buffers = static_cast<u8*>(malloc(initialIndividualBufferSize * sound->streamingBufferCount));
+
+        if(buffers == nullptr) {DebugHaltAndCatchFire();}
+        auto result = sound->source->Start();
+        if(FAILED(result)) {DebugHaltAndCatchFire();}
+
+        u32 currentDiskReadBuffer = 0;
+        u32 currentPosition = 0;
+        bool eof = false;
+        u64 individualBufferSize = initialIndividualBufferSize;
+        IMFMediaBuffer* buffer = nullptr;
+        IMFSample* sample = nullptr;
+
+        while(!eof) {
+            DWORD flags;
+
+            HRESULT result = sound->decoder->reader->ReadSample(
+                        MF_SOURCE_READER_FIRST_AUDIO_STREAM,
+                        0,
+                        nullptr,
+                        &flags,
+                        nullptr,
+                        &sample
+            );
+            if(flags & MF_SOURCE_READERF_ENDOFSTREAM) {eof = true;}
+
+            if(eof) {
+                if(sound->loop) {
+                    PROPVARIANT var {0};
+                    InitPropVariantFromInt64(0, &var);
+                    sound->decoder->reader->SetCurrentPosition(GUID_NULL, var);
+                    PropVariantClear(&var);
+                    eof=false;
+                    continue;
+                } else {
+                    break;
+                }
+            }
+            XAUDIO2_VOICE_STATE state;
+
+            if(FAILED(result) || sample == nullptr) {DebugHaltAndCatchFire();}
+            result = sample->ConvertToContiguousBuffer(&buffer);
+            if(FAILED(result) || sample == nullptr) {
+                sample->Release();
+                DebugHaltAndCatchFire();
+            }
+            u8* audioData = nullptr;
+            DWORD bufferReadCount;
+
+
+            result = buffer->Lock(&audioData, nullptr, &bufferReadCount);
+            if(FAILED(result)) {DebugHaltAndCatchFire();}
+            XAUDIO2_BUFFER buf = {0};
+
+
+            while(sound->source->GetState(&state), state.BuffersQueued >= sound->streamingBufferCount) {
+                WaitForSingleObject(sound->streamContext->hBufferEndEvent, INFINITE);
+            }
+
+            buf.AudioBytes = bufferReadCount;
+            memcpy(buffers + (currentDiskReadBuffer * individualBufferSize), audioData, bufferReadCount);
+            buf.pAudioData = reinterpret_cast<const BYTE *>(buffers + individualBufferSize * currentDiskReadBuffer);
+
+            result = buffer->Unlock();
+
+            sound->source->SubmitSourceBuffer(&buf);
+
+            currentDiskReadBuffer++;
+            currentDiskReadBuffer = (currentDiskReadBuffer % sound->streamingBufferCount);
+
+            if(FAILED(result)) {return AUDIOLIB_MF_GENERIC;}
+            sample->Release();
+            sample = nullptr;
+            buffer->Release();
+            buffer = nullptr;
+        }
+        if(sample) {sample->Release();}
+        if(buffer) {
+            buffer->Unlock();
+            buffer->Release();
+        }
+
+
+        XAUDIO2_VOICE_STATE state;
+        while(sound->source->GetState(&state), state.BuffersQueued > 0) {
+            WaitForSingleObjectEx(sound->streamContext->hBufferEndEvent, INFINITE, TRUE);
+        }
+        //TODO: Free the stuff
+        free(buffers);
+
+        return 0;
+    }
+
+    AudiolibError streamWMFFileFromDisk(AudioPlaybackContext* player, const wchar_t* filePath) {
+        auto* decoder = new MediaFoundationAudioDecoder;
+        auto result = mediaFoundationOpenEncodedAudioFile(filePath, decoder);
+        if(result != AUDIOLIB_OK) {delete decoder; return result;}
+        IXAudio2SourceVoice* source;
+        auto context = new StreamingVoiceContext();
+        auto winResult = player->xaudio->CreateSourceVoice(&source, decoder->wf, 0, XAUDIO2_MAX_FREQ_RATIO, context, nullptr, nullptr);
+        if(FAILED(winResult)) {
+            delete decoder;
+            source->DestroyVoice();
+            return AUDIOLIB_XAUDIO_GENERIC_ERROR;
+        }
+        auto* streamContext = new WMFReaderStreamContext {
+            source,
+            context,
+            player,
+            decoder,
+            2000,
+            3,
+            true
+        };
+        DWORD threadID;
+        auto streamThread = CreateThread(nullptr, 0, wmfStreamThread, streamContext, 0, &threadID);
+        return AUDIOLIB_OK;
+    }
 }
