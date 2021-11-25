@@ -3,9 +3,12 @@
 #include "memUtil.h"
 #include <io.h>
 #include <propvarutil.h>
+#include <Audioclient.h>
+#include<mmreg.h>
 namespace PlatformWin32 {
 
 #define min(a, b) (((a) < (b)) ? (a) : (b))
+
     /*! \brief Utility function to retrieve a FILE* from a HANDLE
      \param [in] winFileHandle Pointer to a HANDLE created using OpenFile
      \param [out] cFileHandle Resulting File Pointer
@@ -68,7 +71,7 @@ namespace PlatformWin32 {
 
         _device->description = var.pwszVal;
         DWORD state = 0;
-        result = endpoint->GetState(0);
+        result = endpoint->GetState(&state);
         if(FAILED(result)) {return AUDIOLIB_ENDPOINT_INFO_ERROR;}
         _device->currentState = state;
 
@@ -127,7 +130,7 @@ namespace PlatformWin32 {
         AudioDevice defaultDevice {0};
 
         ComPtr<IMMDeviceEnumerator> devEnum;
-        ComPtr<IMMDevice> endpoint;
+        IMMDevice* endpoint;
         HRESULT result = CoCreateInstance(__uuidof(MMDeviceEnumerator),
                                           nullptr,
                                           CLSCTX_INPROC_SERVER,
@@ -137,13 +140,18 @@ namespace PlatformWin32 {
         if(FAILED(result)) {return AUDIOLIB_ENDPOINT_RETRIEVAL;}
 
         result = devEnum->GetDefaultAudioEndpoint(static_cast<EDataFlow>(role), eMultimedia,
-                                                  endpoint.GetAddressOf());
+                                                  &endpoint);
         if(FAILED(result)) {
             if(result == E_POINTER || result == E_INVALIDARG) {return AUDIOLIB_ENDPOINT_INFO_ERROR;}
             else if(result == E_OUTOFMEMORY) {return AUDIOLIB_OUTOFMEMORY;}
             else if(result == E_NOTFOUND) {return AUDIOLIB_ENDPOINT_NODEVICE;}
         }
-        AudiolibError aResult = getDescFromEndpoint(endpoint.Get(),&defaultDevice);
+
+        AudiolibError aResult = getDescFromEndpoint(endpoint,&defaultDevice);
+        device->endpoint = endpoint;
+        device->description = defaultDevice.description;
+        device->deviceID = defaultDevice.deviceID;
+
         if(aResult != AUDIOLIB_OK) {return aResult;}
         return AUDIOLIB_OK;
 
@@ -241,7 +249,7 @@ namespace PlatformWin32 {
 
     WAVEFORMATEX audioInfoToWF(_In_ AudioFormatInfo* info) {
         WAVEFORMATEX wf {0};
-        wf.wFormatTag = WAVE_FORMAT_PCM;
+        wf.wFormatTag = (info->optTag > 0) ? info->optTag : WAVE_FORMAT_PCM;
         wf.nSamplesPerSec = info->sampleRate;
         wf.wBitsPerSample = info->bitsPerSample;
         wf.nChannels = info->numberOfChannels;
@@ -253,14 +261,16 @@ namespace PlatformWin32 {
 
     AudiolibError submitSoundBuffer(_Inout_ AudioPlaybackContext *context,
                           _In_ PCMAudioBufferInfo *buffer,
+                          _In_opt_ WAVEFORMATEXTENSIBLE *wfopt,
                           _Out_ AudioHandle *handle,
                           bool loop) {
 
         if(context == nullptr || buffer == nullptr) {return AUDIOLIB_INVALID_PARAMETER;}
         IXAudio2SourceVoice* source = nullptr;
-        WAVEFORMATEX wf = audioInfoToWF(&buffer->audioInfo);
+        WAVEFORMATEX wf {0};
+        wf = audioInfoToWF(&buffer->audioInfo);
 
-        HRESULT result = context->xaudio->CreateSourceVoice(&source, &wf,
+        HRESULT result = context->xaudio->CreateSourceVoice(&source, wfopt? reinterpret_cast<WAVEFORMATEX *>(wfopt) : &wf,
                                                             0,
                                                             XAUDIO2_MAX_FREQ_RATIO,
                                                             nullptr,
@@ -422,7 +432,7 @@ namespace PlatformWin32 {
         size_t waveSize = 0;
         result = MFCreateWaveFormatExFromMFMediaType(uncompressedAudioType,
                                                      reinterpret_cast<WAVEFORMATEX **>(&waveFormat),
-                                                     &waveSize,
+                                                     reinterpret_cast<u32*>(&waveSize),
                                                      MFWaveFormatExConvertFlag_Normal);
         if(FAILED(result) || waveFormat == nullptr) {
             OutputDebugStringW(L"Unable to retrieve wave format form media type\n");
@@ -741,7 +751,6 @@ namespace PlatformWin32 {
             if(FAILED(result)) {DebugHaltAndCatchFire();}
             XAUDIO2_BUFFER buf = {0};
 
-
             while(sound->source->GetState(&state), state.BuffersQueued >= sound->streamingBufferCount) {
                 WaitForSingleObject(sound->streamContext->hBufferEndEvent, INFINITE);
             }
@@ -751,6 +760,7 @@ namespace PlatformWin32 {
             buf.pAudioData = reinterpret_cast<const BYTE *>(buffers + individualBufferSize * currentDiskReadBuffer);
 
             result = buffer->Unlock();
+
 
             sound->source->SubmitSourceBuffer(&buf);
 
@@ -803,6 +813,119 @@ namespace PlatformWin32 {
         };
         DWORD threadID;
         auto streamThread = CreateThread(nullptr, 0, wmfStreamThread, streamContext, 0, &threadID);
+        return AUDIOLIB_OK;
+    }
+
+    AudiolibError startRecordingFromEndpopint(AudioDevice *device, u8** pcmOut, u32* pcmBufferSize, WAVEFORMATEXTENSIBLE** wfOut) {
+        HRESULT result;
+        if(device == nullptr) {return AUDIOLIB_INVALID_PARAMETER;}
+        WAVEFORMATEXTENSIBLE* wf;
+        IAudioClient* captureClient;
+
+        AudioFormatInfo info {0};
+        info.bitsPerSample = 16;
+        info.sampleRate = 48000;
+        info.numberOfChannels = 1;
+        WAVEFORMATEX desiredWF = audioInfoToWF(&info);
+
+        result = device->endpoint->Activate(__uuidof(IAudioClient), CLSCTX_ALL, 0, reinterpret_cast<void **>(&captureClient));
+        if(FAILED(result) || captureClient == nullptr) {return AUDIOLIB_ERROR_UNKNOWN;}
+
+        result = captureClient->GetMixFormat(reinterpret_cast<WAVEFORMATEX **>(&wf));
+
+        if(wf == nullptr) {return AUDIOLIB_ERROR_UNKNOWN;}
+        const MFTIME ONE_SECOND = 10000000;
+        const LONG   ONE_MSEC = 1000;
+
+        const u64 bufferLength = ONE_SECOND * 3;
+
+        /* For testing purposes, we'll allocate a buffer of 3 secs,
+         * I really don't know what the max buffer size should be here at this point,
+         * we might increase or decrease this in the future, given how possible it is to
+         * change this buffer size while already recording...
+        */
+
+        result = captureClient->Initialize(
+                AUDCLNT_SHAREMODE_SHARED,
+                0,
+                bufferLength,
+                0,
+                reinterpret_cast<WAVEFORMATEX*>(wf),
+                nullptr
+                );
+
+        if(FAILED(result)) {return AUDIOLIB_ERROR_UNKNOWN;}
+        //wf = reinterpret_cast<WAVEFORMATEXTENSIBLE *>(&desiredWF);
+        u32 bufferSampleCount;
+        result = captureClient->GetBufferSize(&bufferSampleCount);
+        if(FAILED(result) || bufferSampleCount == 0) {return AUDIOLIB_ERROR_UNKNOWN;}
+
+        IAudioCaptureClient* recoder = nullptr;
+        result = captureClient->GetService(__uuidof(IAudioCaptureClient),
+                                           (void**)&recoder);
+
+        if(FAILED(result) || recoder == nullptr) {return AUDIOLIB_ERROR_UNKNOWN;}
+
+        u64 actualDuration = ONE_SECOND * bufferSampleCount / wf->Format.nSamplesPerSec;
+        if(FAILED(result)) {return AUDIOLIB_ERROR_UNKNOWN;}
+        u32 packetLen;
+        bool eof = false;
+        result = captureClient->Start();
+
+        Sleep(actualDuration/(ONE_MSEC * 10));
+        result = recoder->GetNextPacketSize(&packetLen);
+        if(FAILED(result)) {return AUDIOLIB_ERROR_UNKNOWN;}
+        u8* data = nullptr;
+        u32 numFramesAvailable = 0;
+        DWORD flags;
+        u64 bufferSize = actualDuration/(ONE_SECOND) * wf->Format.nAvgBytesPerSec;
+
+        u8* _buffer = static_cast<u8 *>(calloc(bufferSize * 10, 1));
+        u64 offset = 0;
+        float counter = 0;
+
+        bool done = false;
+        while (!done) {
+			while(packetLen != 0) {
+				result = recoder->GetBuffer(&data, &numFramesAvailable, &flags, nullptr, nullptr);
+				if(FAILED(result)) {break;}
+				if (numFramesAvailable == 0) {
+					break;
+				}
+				
+				if(offset + (numFramesAvailable * wf->Format.wBitsPerSample * wf->Format.nChannels) >= bufferSize) {
+					break;
+				}
+				if(flags & AUDCLNT_BUFFERFLAGS_SILENT) {
+					memset(_buffer + offset, 0, numFramesAvailable* wf->Format.wBitsPerSample * wf->Format.nChannels);
+				}
+				else if(data) {
+					memcpy(_buffer + offset, data, numFramesAvailable * wf->Format.wBitsPerSample * wf->Format.nChannels);
+				}
+				offset += numFramesAvailable * wf->Format.wBitsPerSample * wf->Format.nChannels;
+				result = recoder->ReleaseBuffer(numFramesAvailable);
+
+				recoder->GetNextPacketSize(&packetLen);
+                counter += 1;
+                if (counter >= 1000) {
+                    OutputDebugStringW(L"Done");
+                    done = true;
+                }
+			}
+            counter++;
+            if (counter >= 100) {
+                break;
+            }
+        }
+        OutputDebugStringW(L"Done2");
+        captureClient->Stop();
+        captureClient->Release();
+
+        *pcmOut= _buffer;
+        *pcmBufferSize = offset;
+        wf->Format.wFormatTag = WAVE_FORMAT_IEEE_FLOAT;
+        *wfOut = reinterpret_cast<WAVEFORMATEXTENSIBLE *>(wf);
+
         return AUDIOLIB_OK;
     }
 }

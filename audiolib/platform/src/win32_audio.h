@@ -157,11 +157,12 @@ namespace PlatformWin32
             _Out_ u32* numDevices
     );
 
-    AudiolibError getDefaultAudioOutputDevice(_Out_ AudioDevice* device);
+    AudiolibError getDefaultAudioOutputDevice(_Out_ AudioDevice* device, AudiolibDeviceRole role);
 
     /// Frees an audio device
     void freeAudioDevice(_In_ AudioDevice* device);
 
+    AudiolibError startRecordingFromEndpopint(_In_ AudioDevice* device, u8** pcmOut, u32* pcmBufferSize, WAVEFORMATEXTENSIBLE ** wfOut);
 
     enum DecoderType {
         DECODER_PCM,
@@ -179,6 +180,7 @@ namespace PlatformWin32
         u32 numberOfChannels;
         u32 sampleRate;     //Samples per second
         size_t bitsPerSample;
+        u32 optTag;
     };
 
     struct VorbisDecoderFileApi {
@@ -249,6 +251,8 @@ namespace PlatformWin32
 
     struct PCMAudioBufferInfo {
         AudioFormatInfo audioInfo;
+        WAVEFORMATEXTENSIBLE* wfop;
+
         u8* rawDataBuffer;
         size_t bufferSize;
     };
@@ -273,6 +277,7 @@ namespace PlatformWin32
     AudiolibError submitSoundBuffer(
             _Inout_ AudioPlaybackContext*   context,
             _In_    PCMAudioBufferInfo*     buffer,
+            _In_opt_ WAVEFORMATEXTENSIBLE* wfopt,
             _Out_   AudioHandle*            handle,
                     bool                    loop);
 
@@ -330,6 +335,7 @@ namespace PlatformWin32
                                            const wchar_t* filePath);
 
     AudiolibError streamWMFFileFromDisk(AudioPlaybackContext* player, const wchar_t* filePath);
+    void f32ToI16(float* srcBuffer, size_t srcBufferSize, i16** destBuffer, size_t* destBufferSize);
 }
 
 

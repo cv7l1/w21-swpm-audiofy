@@ -16,6 +16,7 @@ i16 sineWave(double time, double freq, double amplitude) {
     result = _amp  * sin(rad);
     return result;
 }
+
 void fillBuffer(i16* buffer, size_t len, int sampleRate, int freq) {
     for(int i = 0; i<len - 1; i+=2) {
         //This should give us a middle C4 (for reference: https://www.youtube.com/watch?v=t8ZE1Mlkg2s)
@@ -44,7 +45,7 @@ void sineWavePlaybackExample() {
     bufferInfo.audioInfo = audioFormat;
     PlatformWin32::AudioHandle audioHandle {0};
 
-    PlatformWin32::submitSoundBuffer(&context, &bufferInfo, &audioHandle, true);
+    PlatformWin32::submitSoundBuffer(&context, &bufferInfo, nullptr, &audioHandle, true);
     PlatformWin32::playAudioBuffer(&context, &audioHandle, true);
 }
 
@@ -57,7 +58,7 @@ void opusPlaybackExample() {
     PlatformWin32::decodeVorbisFile(&opusAPI, L"allTheTime.ogg", &bufferInfo);
 
     PlatformWin32::AudioHandle audioHandle {0};
-    PlatformWin32::submitSoundBuffer(&context, &bufferInfo, &audioHandle, true);
+    PlatformWin32::submitSoundBuffer(&context, &bufferInfo, nullptr, &audioHandle, true);
 
     PlatformWin32::playAudioBuffer(&context, &audioHandle, true);
 }
@@ -72,7 +73,7 @@ void wmfPlaybackExample() {
     PlatformWin32::setupAudioPlayback(true, nullptr, &context);
 
     PlatformWin32::AudioHandle audioHandle {0};
-    PlatformWin32::submitSoundBuffer(&context, &audioBuffer, &audioHandle, true);
+    PlatformWin32::submitSoundBuffer(&context, &audioBuffer, nullptr, &audioHandle, true);
 
     PlatformWin32::playAudioBuffer(&context, &audioHandle, true);
 
@@ -84,6 +85,41 @@ void oggStreamPlaybackExample() {
 
     auto opusAPI = new PlatformWin32::VorbisDecoderFileApi;
     PlatformWin32::streamVorbisFileFromDisk(context, opusAPI, L"spider.ogg");
+}
+void recordingExampleLowLevel() {
+    auto context = new PlatformWin32::AudioPlaybackContext;
+    PlatformWin32::setupAudioPlayback(true, nullptr, context);
+
+    PlatformWin32::AudioDevice device {0};
+    auto result = PlatformWin32::getDefaultAudioOutputDevice(&device, PlatformWin32::AUDIOLIB_ROLE_RECORDING);
+    if(result == PlatformWin32::AUDIOLIB_ENDPOINT_NODEVICE) {
+        //Es wurde kein Mikrofon gefunden. Handeln...
+    }
+    u8* buffer = nullptr;
+    WAVEFORMATEXTENSIBLE* wf = nullptr;
+    u32 bufferSize = 0;
+    PlatformWin32::startRecordingFromEndpopint(&device, &buffer, &bufferSize, &wf);
+
+    i16* newBuffer = nullptr;
+    size_t newBufferSize = 0;
+
+    PlatformWin32::PCMAudioBufferInfo audioBuffer {0};
+    PlatformWin32::AudioFormatInfo info {0};
+
+    info.sampleRate = 48000;
+    info.bitsPerSample = 16;
+    info.numberOfChannels = 1;
+    info.optTag = 0;
+
+    audioBuffer.bufferSize = bufferSize;
+    audioBuffer.audioInfo = info;
+    audioBuffer.rawDataBuffer = buffer;
+    audioBuffer.wfop = wf;
+
+    PlatformWin32::AudioHandle handle {0};
+
+    PlatformWin32::submitSoundBuffer(context, &audioBuffer, wf, &handle, false);
+    PlatformWin32::playAudioBuffer(context, &handle, false);
 }
 
 void wmfStreamPlaybackExample() {
@@ -107,7 +143,8 @@ int WINAPI WinMain(
     //opusPlaybackExample();
     //wmfPlaybackExample();
     //oggStreamPlaybackExample();
-    wmfStreamPlaybackExample();
+    //wmfStreamPlaybackExample();
+    recordingExampleLowLevel();
 
     for(;;) {
         Sleep(100);
