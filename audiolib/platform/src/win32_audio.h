@@ -27,6 +27,10 @@ class VorbisDecoderFileApi;
 #include <xtr1common>
 #include <type_traits>
 #include "../../include/vorbisfile.h"
+#include <optional>
+#include <vector>
+#include <memory>
+#include <functional>
 
 namespace PlatformWin32
 {
@@ -53,7 +57,8 @@ namespace PlatformWin32
         AUDIOLIB_MF_READMAX,
     };
 
-    enum AudiolibDeviceRole {
+
+    enum CIntferfaceAudiolibDeviceRole {
         AUDIOLIB_ROLE_PLAYBACK = eRender,
         AUDIOLIB_ROLE_RECORDING = eCapture,
         AUDIOLIB_ROLE_ALL = eAll,
@@ -86,7 +91,8 @@ namespace PlatformWin32
 
     };
 
-    struct AudioDevice {
+
+    struct CInterfaceAudioDevice {
         wchar_t* deviceID;
         wchar_t* description;
         tagPROPVARIANT var;
@@ -145,24 +151,6 @@ namespace PlatformWin32
              _Inout_ _Notnull_  HANDLE* winFileHandle,
              _Out_              FILE** cFileHandle);
 
-
-
-    /// Retrieves all audio output devices currently available
-    /// \param devices OUT: Pointer to all available devices, free with freeAudioDeviceList
-    /// \param numDevices OUT: Pointer to the number of devices found
-    /// \return Non-Zero on success
-    AudiolibError getAvailableAudioOutputDevices(
-            _Out_ AudioDeviceList* devices,
-            _In_ AudiolibDeviceRole,
-            _Out_ u32* numDevices
-    );
-
-    AudiolibError getDefaultAudioOutputDevice(_Out_ AudioDevice* device);
-
-    /// Frees an audio device
-    void freeAudioDevice(_In_ AudioDevice* device);
-
-
     enum DecoderType {
         DECODER_PCM,
         DECODER_WMF,
@@ -175,11 +163,6 @@ namespace PlatformWin32
     };
 
 
-    struct AudioFormatInfo {
-        u32 numberOfChannels;
-        u32 sampleRate;     //Samples per second
-        size_t bitsPerSample;
-    };
 
     struct VorbisDecoderFileApi {
         DllHelper _dll{L"vorbisfile.dll"};

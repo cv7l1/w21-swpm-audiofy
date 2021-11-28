@@ -2,7 +2,8 @@
 // Created by Jonathan on 09.11.2021.
 //
 
-#include "win32_audio.h"
+#include "audioDevice.h"
+#include "audioPlayer.h"
 #include <cmath>
 
 #define M_PI 3.14159265358979323846
@@ -16,84 +17,41 @@ i16 sineWave(double time, double freq, double amplitude) {
     result = _amp  * sin(rad);
     return result;
 }
-void fillBuffer(i16* buffer, size_t len, int sampleRate, int freq) {
+std::vector<i16> createSineWaveBuffer(size_t len) {
+    std::vector<i16> vec;
+
     for(int i = 0; i<len - 1; i+=2) {
         //This should give us a middle C4 (for reference: https://www.youtube.com/watch?v=t8ZE1Mlkg2s)
         i16 currentSample = sineWave(i, 261.6, 0.9);
-        buffer[i] = currentSample;
-        buffer[i+1] = currentSample;
+        vec.push_back(currentSample);
+        vec.push_back(currentSample);
     }
+    return vec;
 }
 
 void sineWavePlaybackExample() {
+    CoInitializeEx(nullptr, COINIT_MULTITHREADED);
     size_t bufferLen = 44100 * 2 * 8;
-    i16* buffer = static_cast<i16 *>(malloc(bufferLen * sizeof(i16)));
-    fillBuffer(buffer, bufferLen, 44100, 10000);
+    auto sine = createSineWaveBuffer(bufferLen);
 
-    PlatformWin32::AudioPlaybackContext context {0};
-    PlatformWin32::setupAudioPlayback(true, nullptr, &context);
-    PlatformWin32::PCMAudioBufferInfo bufferInfo {0};
-    bufferInfo.bufferSize = bufferLen;
-    bufferInfo.rawDataBuffer = reinterpret_cast<u8 *>(buffer);
+    auto dev = AudioDevice::getDefaultDevice(AudioDeviceRole::Playback);
+    auto devPtr = std::make_shared<AudioDevice>(dev.value());
+    AudioPlayer player(false, devPtr, AudioFormatInfo<i16>::PCMDefault());
+    player.setErrorCallback([]() { printf("Critial error, we have to restart \n");});
 
-    PlatformWin32::AudioFormatInfo audioFormat {0};
-    audioFormat.numberOfChannels = 2;
-    audioFormat.sampleRate = 44100;
-    audioFormat.bitsPerSample = 16;
+    AudioPlayBuffer audioBuffer(AudioFormatInfo<i16>::PCMDefault(), bufferLen);
 
-    bufferInfo.audioInfo = audioFormat;
-    PlatformWin32::AudioHandle audioHandle {0};
+    audioBuffer.setLoop(true);
+    audioBuffer.setPlayFullBuffer(true);
 
-    PlatformWin32::submitSoundBuffer(&context, &bufferInfo, &audioHandle, true);
-    PlatformWin32::playAudioBuffer(&context, &audioHandle, true);
+    audioBuffer.getRawData() = sine;
+
+    player.playAudioBuffer(audioBuffer);
+
+    for(;;) {
+        Sleep(100);
+    }
 }
-
-void opusPlaybackExample() {
-    PlatformWin32::AudioPlaybackContext context {0};
-    PlatformWin32::setupAudioPlayback(true, nullptr, &context);
-
-    PlatformWin32::VorbisDecoderFileApi opusAPI;
-    PlatformWin32::PCMAudioBufferInfo bufferInfo {0};
-    PlatformWin32::decodeVorbisFile(&opusAPI, L"allTheTime.ogg", &bufferInfo);
-
-    PlatformWin32::AudioHandle audioHandle {0};
-    PlatformWin32::submitSoundBuffer(&context, &bufferInfo, &audioHandle, true);
-
-    PlatformWin32::playAudioBuffer(&context, &audioHandle, true);
-}
-
-void wmfPlaybackExample() {
-    PlatformWin32::mediaFoundationSetup();
-
-    PlatformWin32::PCMAudioBufferInfo audioBuffer {0};
-    PlatformWin32::mediaFoundationDecodeFile(L"a.mp3", &audioBuffer);
-
-    PlatformWin32::AudioPlaybackContext context {0};
-    PlatformWin32::setupAudioPlayback(true, nullptr, &context);
-
-    PlatformWin32::AudioHandle audioHandle {0};
-    PlatformWin32::submitSoundBuffer(&context, &audioBuffer, &audioHandle, true);
-
-    PlatformWin32::playAudioBuffer(&context, &audioHandle, true);
-
-}
-
-void oggStreamPlaybackExample() {
-    auto context = new PlatformWin32::AudioPlaybackContext;
-    PlatformWin32::setupAudioPlayback(true, nullptr, context);
-
-    auto opusAPI = new PlatformWin32::VorbisDecoderFileApi;
-    PlatformWin32::streamVorbisFileFromDisk(context, opusAPI, L"spider.ogg");
-}
-
-void wmfStreamPlaybackExample() {
-    PlatformWin32::mediaFoundationSetup();
-    auto context = new PlatformWin32::AudioPlaybackContext;
-    PlatformWin32::setupAudioPlayback(true, nullptr, context);
-
-    PlatformWin32::streamWMFFileFromDisk(context, L"big shot.mp3");
-}
-
 int WINAPI WinMain(
         _In_ HINSTANCE  hinstance,
         _In_ HINSTANCE  hPrevInstance,
@@ -103,13 +61,9 @@ int WINAPI WinMain(
 
     OutputDebugStringW(L"Moin!\n");
     //Still kinda broken but who cares
-    //sineWavePlaybackExample();
+    sineWavePlaybackExample();
     //opusPlaybackExample();
     //wmfPlaybackExample();
     //oggStreamPlaybackExample();
-    wmfStreamPlaybackExample();
 
-    for(;;) {
-        Sleep(100);
-    }
 }

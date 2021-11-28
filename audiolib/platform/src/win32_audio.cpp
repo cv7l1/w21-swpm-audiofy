@@ -3,6 +3,8 @@
 #include "memUtil.h"
 #include <io.h>
 #include <propvarutil.h>
+
+#include <utility>
 namespace PlatformWin32 {
 
 #define min(a, b) (((a) < (b)) ? (a) : (b))
@@ -29,137 +31,19 @@ namespace PlatformWin32 {
     void DebugHaltAndCatchFire() {
         PostMessageW(nullptr, WM_CLOSE, 0, 0);
     }
-    /*!
-     *
-     * @brief Retrieve information about an audio device, including the GUID
-     * @param endpoint [In] Audio Endpoint
-     * @param _device [Out] Structure containing information about the audio endpoint
-     * @return Error code
-     */
-    AudiolibError getDescFromEndpoint(_In_ IMMDevice* endpoint,
-                                      _Out_ AudioDevice* _device) {
-        using Microsoft::WRL::ComPtr;
 
-        if(endpoint == nullptr) {return AUDIOLIB_INVALID_PARAMETER;}
-
-        u32 result = S_OK;
-        wchar_t* id = nullptr;
-        result = endpoint->GetId(&id);
-
-        if(FAILED(result) || id == nullptr) {return AUDIOLIB_ENDPOINT_INFO_ERROR;}
-        _device->deviceID = id;
-
-        ComPtr<IPropertyStore> props;
-        result = endpoint->OpenPropertyStore(STGM_READ, props.GetAddressOf());
-        if(FAILED(result) || props.GetAddressOf() == nullptr) {return AUDIOLIB_ENDPOINT_INFO_ERROR;}
-
-        PROPVARIANT var = {0};
-        PropVariantInit(&var);
-        result = props->GetValue(PKEY_Device_FriendlyName, &var);
-        if(FAILED(result)) {return AUDIOLIB_ENDPOINT_INFO_ERROR;}
-
-        _device->endpoint = endpoint;
-        _device->var = var;
-
-        if(var.vt != VT_LPWSTR) {
-            _device->description = nullptr;
-            return AUDIOLIB_ENDPOINT_INVALID_PROP_DESC;
-        }
-
-        _device->description = var.pwszVal;
-        DWORD state = 0;
-        result = endpoint->GetState(0);
-        if(FAILED(result)) {return AUDIOLIB_ENDPOINT_INFO_ERROR;}
-        _device->currentState = state;
-
-        return AUDIOLIB_OK;
+    template<> WAVEFORMATEX AudioFormatInfo<>::toWaveFormat() const {
+        WAVEFORMATEX wf;
+        wf.wBitsPerSample = bitsPerSample;
+        wf.nChannels = numberOfChannels;
+        wf.nSamplesPerSec = sampleRate;
+        wf.nBlockAlign = (wf.nChannels * wf.wBitsPerSample) / 8;
+        wf.nAvgBytesPerSec = wf.nSamplesPerSec * wf.nBlockAlign;
+        wf.cbSize = 0;
+        wf.wFormatTag = WAVE_FORMAT_PCM;
+        return wf;
     }
 
-    AudiolibError getAvailableAudioDevices(_Out_ AudioDeviceList* _devices,
-                                                 AudiolibDeviceRole role,
-                                                 _Out_ u32* numDevices) {
-        using Microsoft::WRL::ComPtr;
-
-        ComPtr<IMMDeviceEnumerator> devEnum;
-        ComPtr<IMMDeviceCollection> devices;
-        AudioDevice* deviceList = nullptr;
-        u32 deviceCount = 0;
-
-        HRESULT result = CoCreateInstance(__uuidof(MMDeviceEnumerator),
-                                          nullptr,
-                                          CLSCTX_INPROC_SERVER,
-                                          IID_PPV_ARGS(devEnum.GetAddressOf()));
-
-        if(FAILED(result)) {return AUDIOLIB_ENDPOINT_RETRIEVAL;}
-
-        result = devEnum->EnumAudioEndpoints(static_cast<EDataFlow>(role),
-                                             DEVICE_STATE_ACTIVE,
-                                             &devices);
-        if(FAILED(result)) {return AUDIOLIB_ENDPOINT_RETRIEVAL;}
-
-        result = devices->GetCount(&deviceCount);
-        if(FAILED(result) || deviceCount == 0) {return AUDIOLIB_ENDPOINT_NODEVICE;}
-
-        *numDevices = deviceCount;
-        deviceList = new AudioDevice[deviceCount];
-
-        for(u32 i = 0; i < deviceCount; ++i) {
-            ComPtr<IMMDevice> endpoint;
-            result = devices->Item(i, endpoint.GetAddressOf());
-            if(FAILED(result) || endpoint.GetAddressOf() == nullptr) {
-                delete[] deviceList;
-                return AUDIOLIB_ENDPOINT_RETRIEVAL;
-            }
-
-            auto res = getDescFromEndpoint(endpoint.Get(), &deviceList[i]);
-            if(res == AUDIOLIB_ENDPOINT_INVALID_PROP_DESC) {continue;}
-            if(res != AUDIOLIB_OK) {return res;}
-        }
-
-        _devices->deviceCount = deviceCount;
-        _devices->devices = deviceList;
-
-        return AUDIOLIB_OK;
-    }
-
-    AudiolibError getDefaultAudioOutputDevice(_Out_ AudioDevice* device, AudiolibDeviceRole role) {
-        using Microsoft::WRL::ComPtr;
-        AudioDevice defaultDevice {0};
-
-        ComPtr<IMMDeviceEnumerator> devEnum;
-        ComPtr<IMMDevice> endpoint;
-        HRESULT result = CoCreateInstance(__uuidof(MMDeviceEnumerator),
-                                          nullptr,
-                                          CLSCTX_INPROC_SERVER,
-                                          IID_PPV_ARGS(devEnum.GetAddressOf()));
-
-
-        if(FAILED(result)) {return AUDIOLIB_ENDPOINT_RETRIEVAL;}
-
-        result = devEnum->GetDefaultAudioEndpoint(static_cast<EDataFlow>(role), eMultimedia,
-                                                  endpoint.GetAddressOf());
-        if(FAILED(result)) {
-            if(result == E_POINTER || result == E_INVALIDARG) {return AUDIOLIB_ENDPOINT_INFO_ERROR;}
-            else if(result == E_OUTOFMEMORY) {return AUDIOLIB_OUTOFMEMORY;}
-            else if(result == E_NOTFOUND) {return AUDIOLIB_ENDPOINT_NODEVICE;}
-        }
-        AudiolibError aResult = getDescFromEndpoint(endpoint.Get(),&defaultDevice);
-        if(aResult != AUDIOLIB_OK) {return aResult;}
-        return AUDIOLIB_OK;
-
-    }
-    void freeAudioDevice(_Frees_ptr_opt_ AudioDevice *device) {
-        if(device == nullptr) {
-            return;
-        }
-
-        CoTaskMemFree(device->deviceID);
-        device->deviceID = nullptr;
-        PropVariantClear(&device->var);
-        device->description = nullptr;
-        device->endpoint->Release();
-        device->endpoint = nullptr;
-    }
 
     HRESULT AudioDeviceNotifiactionHandler::OnDefaultDeviceChanged(EDataFlow flow, ERole role, LPCWSTR pwstrDeviceID) {
         //TODO: Handle this
@@ -181,122 +65,6 @@ namespace PlatformWin32 {
         return S_OK;
     }
 
-    void freeAudioDeviceList(_Frees_ptr_opt_ AudioDeviceList* list) {
-        if(list == nullptr) {
-            return;
-        }
-        for(int i = 0; i<list->deviceCount; ++i) {
-            freeAudioDevice(&list->devices[i]);
-        }
-        delete[] list->devices;
-        list->deviceCount = 0;
-        list->devices = nullptr;
-    }
-
-    AudiolibError setupAudioPlayback(bool debug,
-                           _In_opt_ AudioDevice *device,
-                           _Out_ AudioPlaybackContext *context) {
-
-        IXAudio2* xAudioContext = nullptr;
-        IXAudio2MasteringVoice* masterV = nullptr;
-
-        u32 flags = debug? XAUDIO2_DEBUG_ENGINE : 0;
-        HRESULT result = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-        if(FAILED(result)) {return AUDIOLIB_COINIT_FAILURE;}
-
-        result = XAudio2Create(&xAudioContext, flags, XAUDIO2_USE_DEFAULT_PROCESSOR);
-        if(FAILED(result) || xAudioContext == nullptr) {return AUDIOLIB_XAUDIO_CONTEXT_CREATION;}
-
-        if(debug) {
-            XAUDIO2_DEBUG_CONFIGURATION config {0};
-            config.TraceMask = XAUDIO2_LOG_ERRORS | XAUDIO2_LOG_WARNINGS;
-            config.BreakMask = XAUDIO2_LOG_ERRORS;
-            config.LogFileline = true;
-            xAudioContext->SetDebugConfiguration(&config);
-        }
-
-        result = xAudioContext->CreateMasteringVoice(&masterV,
-                                                     XAUDIO2_DEFAULT_CHANNELS,
-                                                     XAUDIO2_DEFAULT_SAMPLERATE,
-                                                     0,
-                                                     (device != nullptr) ? device->deviceID : nullptr,
-                                                     nullptr,
-                                                     AudioCategory_Media);
-
-        if(FAILED(result) || masterV == nullptr) {return AUDIOLIB_XAUDIO_VOICE_CREATION;}
-        context->master = masterV;
-        context->xaudio = xAudioContext;
-
-        return AUDIOLIB_OK;
-    }
-
-    AudiolibError setMasterVolume(AudioPlaybackContext *context, const float volume) {
-        if(context == nullptr) {return AUDIOLIB_INVALID_PARAMETER;}
-        if(volume > XAUDIO2_MAX_VOLUME_LEVEL || volume < -XAUDIO2_MAX_VOLUME_LEVEL) {return AUDIOLIB_INVALID_PARAMETER;}
-
-        HRESULT result = context->master->SetVolume(volume);
-        if(FAILED(result)) {return AUDIOLIB_XAUDIO_GENERIC_ERROR;}
-        return AUDIOLIB_OK;
-    }
-
-    WAVEFORMATEX audioInfoToWF(_In_ AudioFormatInfo* info) {
-        WAVEFORMATEX wf {0};
-        wf.wFormatTag = WAVE_FORMAT_PCM;
-        wf.nSamplesPerSec = info->sampleRate;
-        wf.wBitsPerSample = info->bitsPerSample;
-        wf.nChannels = info->numberOfChannels;
-        wf.nBlockAlign = (wf.nChannels * wf.wBitsPerSample) / 8;
-        wf.nAvgBytesPerSec = wf.nSamplesPerSec * wf.nBlockAlign;
-        wf.cbSize = 0;
-        return wf;
-    }
-
-    AudiolibError submitSoundBuffer(_Inout_ AudioPlaybackContext *context,
-                          _In_ PCMAudioBufferInfo *buffer,
-                          _Out_ AudioHandle *handle,
-                          bool loop) {
-
-        if(context == nullptr || buffer == nullptr) {return AUDIOLIB_INVALID_PARAMETER;}
-        IXAudio2SourceVoice* source = nullptr;
-        WAVEFORMATEX wf = audioInfoToWF(&buffer->audioInfo);
-
-        HRESULT result = context->xaudio->CreateSourceVoice(&source, &wf,
-                                                            0,
-                                                            XAUDIO2_MAX_FREQ_RATIO,
-                                                            nullptr,
-                                                            nullptr,
-                                                            nullptr);
-        if(FAILED(result) || source == nullptr) {return AUDIOLIB_XAUDIO_SOURCE_CREATION;}
-
-        XAUDIO2_BUFFER xaudio2Buffer{};
-        xaudio2Buffer.AudioBytes = buffer->bufferSize;
-        xaudio2Buffer.pAudioData = buffer->rawDataBuffer;
-        xaudio2Buffer.Flags = XAUDIO2_END_OF_STREAM;
-        xaudio2Buffer.LoopCount = loop ? XAUDIO2_LOOP_INFINITE : 0;
-
-        AudioHandle _handle {0};
-        _handle.source = source;
-        _handle.audioInfo = *buffer;
-        _handle.loop = loop;
-
-        result = source->SubmitSourceBuffer(&xaudio2Buffer);
-        if(FAILED(result)) {
-            source->DestroyVoice();
-            _handle.source = nullptr;
-            return AUDIOLIB_XAUDIO_SUBMIT_BUFFER;
-        }
-
-        *handle = _handle;
-        return AUDIOLIB_OK;
-    }
-
-    AudiolibError playAudioBuffer(AudioPlaybackContext *context, AudioHandle *handle, bool loop) {
-        if(context == nullptr || handle == nullptr) {return AUDIOLIB_INVALID_PARAMETER;}
-        if(handle->source == nullptr) {return AUDIOLIB_INVALID_PARAMETER;}
-        HRESULT result = handle->source->Start();
-        if(FAILED(result)) {return AUDIOLIB_XAUDIO_GENERIC_ERROR;}
-        return AUDIOLIB_OK;
-    }
 
     AudiolibError decodeVorbisFile(_In_ VorbisDecoderFileApi *api,
                           _In_z_ const wchar_t *filePath,
@@ -805,4 +573,6 @@ namespace PlatformWin32 {
         auto streamThread = CreateThread(nullptr, 0, wmfStreamThread, streamContext, 0, &threadID);
         return AUDIOLIB_OK;
     }
+
 }
+
