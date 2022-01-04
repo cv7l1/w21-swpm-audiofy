@@ -91,8 +91,7 @@ int WinMain(  _In_ HINSTANCE hInstance,
         float* ctrlValues = showControl();
         float* eqData= showEqualizer();
         float* volData = showLeveling();
-        showExport();
-        showImport();
+        ImportWindow::show();
         showMixer();
         showCut();
 

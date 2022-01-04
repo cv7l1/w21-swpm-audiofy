@@ -18,23 +18,41 @@
 #include <shtypes.h>      // for COMDLG_FILTERSPEC
 #include <functional>
 #include <al_error.h>
-
+#include <stdexcept>
 class FileItem {
 public:
-    FileItem(IShellItem* shellItem) : _shellItem(shellItem) {};
+    FileItem(IShellItem* shellItem) : _shellItem(shellItem) {
+        if(!shellItem) {throw std::exception("Invalid shell item");}
+        throwIfFailed(_shellItem->GetDisplayName(SIGDN_FILESYSPATH, &_sysPath));
+
+        SHGetFileInfoW(_sysPath, 0, &_shellFileInfo, sizeof(SHFILEINFOW), SHGFI_DISPLAYNAME | SHGFI_TYPENAME );
+        if(0 == GetFileAttributesExW(getFullFilePath(), GetFileExInfoStandard, &_fileAttributes)) {
+            throw std::exception("Unable to retrieve file info");
+        }
+    };
 
     wchar_t* getFullFilePath() {
-        wchar_t* ret = nullptr;
-        throwIfFailed(_shellItem->GetDisplayName(SIGDN_FILESYSPATH, &ret));
-        return ret;
+        return _sysPath;
     }
     wchar_t* getDisplayName() {
-        wchar_t* ret = nullptr;
-        throwIfFailed(_shellItem->GetDisplayName(SIGDN_NORMALDISPLAY, &ret));
-        return ret;
+        return _shellFileInfo.szDisplayName;
     }
+    wchar_t* getFileTypeDescription() {
+        return _shellFileInfo.szTypeName;
+    }
+    float getFileSize() const {
+        return ((((_fileAttributes.nFileSizeHigh << 16) | _fileAttributes.nFileSizeLow) / 1024.0f) / 1024.0f);
+    }
+
 private:
+    wchar_t* _sysPath;
+    SHFILEINFOW _shellFileInfo;
+
+    WIN32_FILE_ATTRIBUTE_DATA _fileAttributes;
+
+    size_t _shellFileInfoSize;
     IShellItem* _shellItem;
+
 };
 
 class OpenFileItemDialog : public IFileDialogEvents {
@@ -64,10 +82,11 @@ public:
     IFACEMETHODIMP OnTypeChange(IFileDialog *pfd) {return S_OK;}
     IFACEMETHODIMP OnOverwrite(IFileDialog *, IShellItem *, FDE_OVERWRITE_RESPONSE *) { return S_OK; };
 
-    explicit OpenFileItemDialog(std::function<void(FileItem)> onAccept);
+    explicit OpenFileItemDialog(std::function<HRESULT (FileItem)> onAccept);
 
-    void setFileSelectedCallback(std::function<void(FileItem)> callback) {_callback = callback;}
+    void setFileSelectedCallback(std::function<HRESULT(FileItem)> callback) {_callback = callback;}
     void show();
+
     std::optional<FileItem> getResult();
     ~OpenFileItemDialog() {
         fileDialog->Unadvise(_cookie);
@@ -78,7 +97,7 @@ private:
     DWORD _cookie;
     long _cRef;
     IFileDialog* fileDialog;
-    std::function<void(FileItem)> _callback;;
+    std::function<HRESULT(FileItem)> _callback;;
 };
 
 #endif //AUDIOLIB_EXAMPLES1_AY_FILEMANAGER_H

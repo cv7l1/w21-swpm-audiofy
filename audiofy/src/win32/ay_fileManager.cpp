@@ -6,11 +6,7 @@
 #include "al_debug.h"
 #include "al_error.h"
 
-void ciUtil(REFIID riid, void **ppv) {
-
-}
-
-OpenFileItemDialog::OpenFileItemDialog(std::function<void(FileItem)> onAccept) : _cRef(1), _callback(onAccept)  {
+OpenFileItemDialog::OpenFileItemDialog(std::function<HRESULT(FileItem)> onAccept) : _cRef(1), _callback(onAccept)  {
     CoInitializeEx(nullptr, COINIT_MULTITHREADED);
     throwIfFailed(CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&this->fileDialog)));
 

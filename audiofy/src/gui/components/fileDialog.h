@@ -1,27 +1,60 @@
-void showImport() {
+#include "../../win32/ay_fileManager.h"
+
+class ImportWindow {
+public:
+    static void show();
+private:
+    static std::optional<FileItem> selectedFile;
+    static void onImportButtonPressed();
+};
+std::optional<FileItem> ImportWindow::selectedFile = std::nullopt;
+
+void ImportWindow::show() {
     static float f = 0.0f;
     static int counter = 0;
 
-    ImGui::SetNextWindowPos(ImVec2(0, 0));
-    ImGui::SetNextWindowSize(ImVec2(198, 88));
-    ImGui::Begin("Import your audio files");
+    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(198, 88), ImGuiCond_FirstUseEver);
 
-    ImGui::SliderFloat("Bitrate", &f, 0.0f, 1.0f);
+    ImGui::Begin("Import", 0, 0);
+    if (ImGui::Button("Öffnen")) {
+        onImportButtonPressed();
+    }
 
-    if (ImGui::Button("Import"))
-    counter++;
-    ImGui::SameLine();
-    ImGui::Text("Files Imported = %d", counter);
+    if(selectedFile.has_value()) {
+        ImGui::Text("Dateiname: %ls", selectedFile.value().getDisplayName());
+        ImGui::Text("Dateityp: %ls", selectedFile.value().getFileTypeDescription());
+        ImGui::Text("Größe: %fmb", selectedFile.value().getFileSize());
+        if(ImGui::Button("Zu Projekt hinzufügen")) {
+
+        }
+        if(ImGui::Button("Abbrechen")) {
+            selectedFile = std::nullopt;
+        }
+    }
 
     ImGui::End();
 }
+
+HRESULT onFileAccept(FileItem file) {
+    return S_OK;
+}
+
+void ImportWindow::onImportButtonPressed() {
+    OpenFileItemDialog dialog(onFileAccept);
+    dialog.show();
+    ImportWindow::selectedFile = dialog.getResult();
+}
+
 void showExport() {
     static float f = 0.0f;
     static int counter = 0;
 
-    ImGui::SetNextWindowPos(ImVec2(0, 88));
-    ImGui::SetNextWindowSize(ImVec2(198, 111));
-    ImGui::Begin("Export your audio file");
+    //ImGui::SetNextWindowPos(ImVec2(0, 88));
+    //ImGui::SetNextWindowSize(ImVec2(198, 111));
+
+    bool active;
+    ImGui::Begin("Export your audio file", &active, ImGuiWindowFlags_AlwaysAutoResize);
 
 
     ImGui::SliderFloat("Bitrate", &f, 0.5f, 1.0f);
