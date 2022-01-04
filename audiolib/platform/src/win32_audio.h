@@ -15,8 +15,8 @@ class VorbisDecoderFileApi;
 
 #include <sal.h>
 #include "types.h"
-#include<mfidl.h>
-#include<mfreadwrite.h>
+#include <mfidl.h>
+#include <mfreadwrite.h>
 #include <mfapi.h>
 #include <mfidl.h>
 #include <mmdeviceapi.h>
@@ -64,32 +64,6 @@ namespace PlatformWin32
         AUDIOLIB_ROLE_ALL = eAll,
     };
 
-    class ProcPtr {
-    public:
-        explicit ProcPtr(FARPROC ptr) : _ptr(ptr) {}
-        template <typename T, typename = std::enable_if_t<std::is_function_v<T>>>
-        operator T* () const {
-            return reinterpret_cast<T *>(_ptr);
-        }
-
-    private:
-        FARPROC _ptr;
-    };
-
-    class DllHelper {
-    public:
-        explicit DllHelper(_In_z_ const wchar_t* libPath) : _module(LoadLibraryW(libPath)) {}
-        ~ DllHelper() { FreeLibrary(_module);}
-
-        ProcPtr operator[] (_In_z_ const char* proc_name) const {
-            return ProcPtr(GetProcAddress(_module, proc_name));
-        }
-        static HMODULE _parent_module;
-
-    private:
-        HMODULE _module;
-
-    };
 
 
     struct CInterfaceAudioDevice {
@@ -106,46 +80,7 @@ namespace PlatformWin32
         AudioDevice* devices;
     };
 
-#define SAFE_RELEASE(punk)  \
-    if ((punk) != NULL)  \
-    { (punk)->Release(); (punk) = NULL; }
 
-    class AudioDeviceNotifiactionHandler : public IMMNotificationClient {
-        LONG _cRef;
-        IMMDeviceEnumerator *_enumerator;
-
-    public:
-        AudioDeviceNotifiactionHandler() : _cRef(1), _enumerator(nullptr) {}
-        ~AudioDeviceNotifiactionHandler() { SAFE_RELEASE(_enumerator)}
-
-        ULONG STDMETHODCALLTYPE AddRef() override {
-            return InterlockedIncrement(&_cRef);
-        }
-        ULONG STDMETHODCALLTYPE Release() override {
-            ULONG ulRef = InterlockedDecrement(&_cRef);
-            if(!ulRef) {
-                delete this;
-            }
-            return ulRef;
-        }
-        HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppvInterface) override {
-            if(IID_IUnknown == riid) {
-                AddRef();
-                *ppvInterface = (IUnknown*)this;
-            } else if(__uuidof(IMMNotificationClient) == riid) {
-                AddRef();
-                *ppvInterface = (IMMNotificationClient*)this;
-            } else {
-                *ppvInterface = nullptr;
-                return E_NOINTERFACE;
-            }
-            return S_OK;
-        }
-        HRESULT STDMETHODCALLTYPE OnDefaultDeviceChanged(EDataFlow flow, ERole role, LPCWSTR pwstrDeviceID) override;
-        HRESULT STDMETHODCALLTYPE OnDeviceAdded(LPCWSTR pwstrDeviceId) override;
-        HRESULT STDMETHODCALLTYPE OnDeviceStateChanged(LPCWSTR pwstrDeviceId, DWORD dwNewState) override;
-        HRESULT STDMETHODCALLTYPE OnPropertyValueChanged();
-    };
 
      AudiolibError winFileHandleToCFileHandle(
              _Inout_ _Notnull_  HANDLE* winFileHandle,
@@ -162,8 +97,6 @@ namespace PlatformWin32
         IXAudio2MasteringVoice* master;
     };
 
-
-
     struct VorbisDecoderFileApi {
         DllHelper _dll{L"vorbisfile.dll"};
         decltype(ov_open_callbacks)* ov_open_callbacks = _dll["ov_open_callbacks"];
@@ -173,6 +106,7 @@ namespace PlatformWin32
         decltype(ov_pcm_seek)* ov_pcm_seek = _dll["ov_read"];
         decltype(ov_raw_seek)* ov_raw_seek = _dll["ov_raw_seek"];
     };
+
     struct StreamingVoiceContext : public IXAudio2VoiceCallback{
         HANDLE hBufferEndEvent;
         StreamingVoiceContext() : hBufferEndEvent(CreateEvent(nullptr, false, false, nullptr)) {}

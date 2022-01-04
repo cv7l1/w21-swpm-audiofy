@@ -352,7 +352,6 @@ namespace PlatformWin32 {
                 }
 
                 XAUDIO2_VOICE_STATE state;
-
                 while(sound->source->GetState(&state), state.BuffersQueued >= sound->streamingBufferCount - 1) {
                     WaitForSingleObject(sound->streamingContext->hBufferEndEvent, INFINITE);
                 }

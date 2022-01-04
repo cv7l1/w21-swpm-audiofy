@@ -23,7 +23,7 @@ class VorbisDecoderFileApi;
 #include <utility>
 #include <xtr1common>
 #include <type_traits>
-#include "../../include/vorbisfile.h"
+#include "vorbisfile.h"
 #include <optional>
 #include <vector>
 #include <memory>

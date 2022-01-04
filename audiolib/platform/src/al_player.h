@@ -2,11 +2,11 @@
 // Created by Jonathan on 27.11.2021.
 //
 
-#ifndef AUDIOFY_LIB_AUDIOPLAYER_H
-#define AUDIOFY_LIB_AUDIOPLAYER_H
+#ifndef AUDIOFY_LIB_AL_PLAYER_H
+#define AUDIOFY_LIB_AL_PLAYER_H
 
 #include "al_error.h"
-#include "audioDevice.h"
+#include "al_device.h"
 
 template<typename T = i16> struct AudioFormatInfo {
     static_assert(std::is_integral<T>::value, "AudioFormatInfo currently only suppors integral pcm data types");
@@ -64,7 +64,9 @@ private:
     u32 loopCount = 0;
     bool loop = false;
 public:
-    void setPlayCursor(const u64 cursorIndex) {playCursorStartIndex = cursorIndex;}
+    u64 getPlayCursor() const {
+        return playCursorStartIndex;
+    }
 
     u64 getPlayLength() const {
         return playLength;
@@ -79,7 +81,7 @@ public:
     }
 
     void setLoopCount(u32 loopCount) {
-        AudioPlayBuffer::loopCount = loopCount;
+        this->loopCount = loopCount;
     }
 
     bool isLoop() const {
@@ -91,42 +93,58 @@ public:
     }
 
     void setAudioFormat(const AudioFormatInfo<T> &audioFormat) {
-        AudioPlayBuffer::audioFormat = audioFormat;
+        this->audioFormat = audioFormat;
     }
 
     bool isPlayFullBuffer() const {
         return playFullBuffer;
     }
 
-    void setPlayFullBuffer(bool playFullBuffer) {
-        AudioPlayBuffer::playFullBuffer = playFullBuffer;
+    void setPlayFullBuffer(bool _playFullBuffer) {
+        this->playFullBuffer = _playFullBuffer;
     }
+    void setPlayCursor(const u64 cursorIndex) {playCursorStartIndex = cursorIndex;}
 
 private:
     AudioFormatInfo<T> audioFormat;
     bool playFullBuffer = true;
 };
 
-
-class AudioMixer {
-
+struct AudioBufferPortion {
+    u64 head;
+    u64 tail;
 };
 
-class AudioPlayer : IXAudio2EngineCallback {
+class IAudioPlayerObserver {
+public:
+    virtual void OnBufferPlayStart() = 0;
+    virtual void OnBufferPlayEnd() = 0;
+    virtual void OnLoopEnd() = 0;
+    virtual void OnError() = 0;
+    virtual void OnStreamEnd() = 0;
+};
+
+class AudioPlayer : IXAudio2EngineCallback, IXAudio2VoiceCallback {
 public:
     explicit AudioPlayer(bool debug = false,
                          _In_opt_ std::shared_ptr<AudioDevice> device = nullptr,
                          _In_opt_ AudioFormatInfo<> info = AudioFormatInfo<>::PCMDefault());
 
-    void playAudioBuffer(_In_ AudioPlayBuffer<>& buffer);
+    void    playAudioBuffer(_In_ AudioPlayBuffer<>& buffer,
+                            bool start = true);
 
-    void setMasterVolume(float volume);
-    float getCurrentVolume();
-    bool isPlaying();
-    void setErrorCallback(std::function<void()> callback) {onErrorCallback = std::move(callback);}
+    void    attach(_In_ IAudioPlayerObserver* observer);
+    void    detach(_In_ IAudioPlayerObserver* observer);
 
-    void play();
-    void pause();
+    void    setMasterVolume(float volume);
+    float   getCurrentVolume();
+    bool    isPlaying();
+    void    setErrorCallback(std::function<void()> callback) {onErrorCallback = std::move(callback);}
+    void    seekToSample(const u64 sampleIndex);
+
+    void    play();
+    void    pause();
+    void    stopLoop();
 
     STDMETHODIMP_(void) OnCriticalError(HRESULT error) override {
         onErrorCallback();
@@ -135,15 +153,27 @@ public:
     STDMETHODIMP_(void) OnProcessingPassEnd() override {}
     STDMETHODIMP_(void) OnProcessingPassStart() override {}
 
+    void STDMETHODCALLTYPE OnVoiceProcessingPassEnd() override { }
+    void STDMETHODCALLTYPE OnVoiceProcessingPassStart (UINT32 SamplesRequired) override {    }
+
+    void STDMETHODCALLTYPE OnStreamEnd() override;
+    void STDMETHODCALLTYPE OnBufferEnd(void * pBufferContext) override;
+    void STDMETHODCALLTYPE OnBufferStart(void * pBufferContext)override;
+    void STDMETHODCALLTYPE OnLoopEnd(void * pBufferContext)override;
+    void STDMETHODCALLTYPE OnVoiceError(void * pBufferContext, HRESULT Error) override;
+
+
 private:
 
 private:
+
+    HANDLE bufferEndEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
     void initEngine();
-
     void flipBufferData(AudioPlayBuffer<>& buffer);
     void submitBuffer();
     std::function<void()> onErrorCallback = []() { printf("CRITICAL ERROR: RESTARTING\n");};
 
+    std::list<IAudioPlayerObserver*> _observer;
     bool paused = true;
     bool _debug;
     Microsoft::WRL::ComPtr<IXAudio2> _context = nullptr;
@@ -151,10 +181,11 @@ private:
 
     IXAudio2SourceVoice* frontVoice = nullptr;
 
-     std::unique_ptr<AudioPlayBuffer<>> frontAudioBuffer = std::make_unique<AudioPlayBuffer<>>();
+    std::unique_ptr<AudioPlayBuffer<>> frontAudioBuffer = std::make_unique<AudioPlayBuffer<>>();
 
     std::shared_ptr<AudioDevice> _currentDevice = nullptr;
     AudioFormatInfo<> currentAudioFormat;
+
 };
 
-#endif //AUDIOFY_LIB_AUDIOPLAYER_H
+#endif //AUDIOFY_LIB_AL_PLAYER_H
