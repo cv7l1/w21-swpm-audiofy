@@ -10,11 +10,11 @@ void ciUtil(REFIID riid, void **ppv) {
 
 }
 
-OpenFileItemDialog::OpenFileItemDialog(std::function<FileItem()> onAccept) : _cRef(1), _callback(onAccept)  {
+OpenFileItemDialog::OpenFileItemDialog(std::function<void(FileItem)> onAccept) : _cRef(1), _callback(onAccept)  {
+    CoInitializeEx(nullptr, COINIT_MULTITHREADED);
     throwIfFailed(CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&this->fileDialog)));
 
-    DWORD cookie;
-    throwIfFailed(fileDialog->Advise(this, &cookie));
+    throwIfFailed(fileDialog->Advise(this, &_cookie));
 
     DWORD flags;
     throwIfFailed(fileDialog->GetOptions(&flags));
@@ -22,16 +22,30 @@ OpenFileItemDialog::OpenFileItemDialog(std::function<FileItem()> onAccept) : _cR
 
     //TODO: Limit to audio files only
     throwIfFailed(fileDialog->SetDefaultExtension(L"wav"));
+
 }
 
 void OpenFileItemDialog::show() {
-    throwIfFailed(fileDialog->Show(nullptr));
+    auto result = fileDialog->Show(nullptr);
 }
 
 IFACEMETHODIMP OpenFileItemDialog::OnFileOk(IFileDialog *dialog) {
     IShellItem* ret;
-    throwIfFailed(dialog->GetResult(&ret));
+    auto result = dialog->GetResult(&ret);
+    if(FAILED(result)) {return S_FALSE;}
+
     _callback(FileItem(ret));
+
     return S_OK;
+}
+
+std::optional<FileItem> OpenFileItemDialog::getResult() {
+    IShellItem* ret;
+    auto result = fileDialog->GetResult(&ret);
+    if(FAILED(result)) {
+        return std::nullopt;
+    }
+
+    return FileItem(ret);
 }
 

@@ -56,31 +56,29 @@ public:
         return cRef;
     }
 
-    IFACEMETHODIMP OnFileOk(IFileDialog* dialog);
+    IFACEMETHODIMP OnFileOk(IFileDialog* dialog) override;
     IFACEMETHODIMP OnFolderChange(IFileDialog *) { return S_OK; };
     IFACEMETHODIMP OnFolderChanging(IFileDialog *, IShellItem *) { return S_OK; };
-    IFACEMETHODIMP OnHelp(IFileDialog *) { return S_OK; };
     IFACEMETHODIMP OnSelectionChange(IFileDialog *) { return S_OK; };
     IFACEMETHODIMP OnShareViolation(IFileDialog *, IShellItem *, FDE_SHAREVIOLATION_RESPONSE *) { return S_OK; };
-    IFACEMETHODIMP OnTypeChange(IFileDialog *pfd);
+    IFACEMETHODIMP OnTypeChange(IFileDialog *pfd) {return S_OK;}
     IFACEMETHODIMP OnOverwrite(IFileDialog *, IShellItem *, FDE_OVERWRITE_RESPONSE *) { return S_OK; };
 
-    IFACEMETHODIMP OnItemSelected(IFileDialogCustomize *pfdc, DWORD dwIDCtl, DWORD dwIDItem);
-    IFACEMETHODIMP OnButtonClicked(IFileDialogCustomize *, DWORD) { return S_OK; };
-    IFACEMETHODIMP OnCheckButtonToggled(IFileDialogCustomize *, DWORD, BOOL) { return S_OK; };
-    IFACEMETHODIMP OnControlActivating(IFileDialogCustomize *, DWORD) { return S_OK; };
+    explicit OpenFileItemDialog(std::function<void(FileItem)> onAccept);
 
-    OpenFileItemDialog(std::function<FileItem()> onAccept);
-
-    void setFileSelectedCallback(std::function<FileItem()> callback) {_callback = callback;}
+    void setFileSelectedCallback(std::function<void(FileItem)> callback) {_callback = callback;}
     void show();
-private:
+    std::optional<FileItem> getResult();
+    ~OpenFileItemDialog() {
+        fileDialog->Unadvise(_cookie);
+        fileDialog->Release();
+    }
 
+private:
+    DWORD _cookie;
     long _cRef;
     IFileDialog* fileDialog;
-    std::function<void(IShellItem*)> _callback;
-
-    ~OpenFileItemDialog() {};
+    std::function<void(FileItem)> _callback;;
 };
 
 #endif //AUDIOLIB_EXAMPLES1_AY_FILEMANAGER_H
