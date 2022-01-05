@@ -19,17 +19,24 @@ void ProjectFileListComponent::Show() {
 
             for(auto item : itemList) {
                 bstr_t itemName(item.getDisplayName());
-                if(ImGui::Selectable(itemName)) {
-                    selectedItem = index;
+                ImGui::Selectable(itemName);
+                selectedItem = index;
+                if(ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoDisableHover)) {
+                    ImGui::Text("Moving file");
+                    ImGui::SetDragDropPayload("FILE_DD", &selectedItem, sizeof(int));
+                    ImGui::EndDragDropSource();
                 }
+
                 index++;
             }
             ImGui::EndListBox();
         }
+
         if(selectedItem != -1) {
             ImGui::Text("Dateiname: %ls",itemList[selectedItem].getDisplayName());
             ImGui::Text("Dateityp: %ls", itemList[selectedItem].getFileTypeDescription());
             ImGui::Text("Größe: %fmb", itemList[selectedItem].getFileSize());
+
             if(ImGui::Button("Mehr Informationen")) {
                 GuiMain::AddComponent(new FileInfoWindow(itemList[selectedItem]));
             }

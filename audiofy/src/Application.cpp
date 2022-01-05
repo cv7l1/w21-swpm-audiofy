@@ -20,7 +20,7 @@
 #include "win32_framework.h"
 #include "win32/ay_fileManager.h"
 #include "gui/components/projectFileListComponent.h"
-
+#include "soundtouch/SoundTouchDLL.h"
 // Data
 static ID3D11Device*            g_pd3dDevice = NULL;
 static ID3D11DeviceContext*     g_pd3dDeviceContext = NULL;
@@ -35,6 +35,9 @@ void CleanupRenderTarget();
 
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 std::vector<FileItem> ProjectFiles::files = std::vector<FileItem>();
+//DEBUG!
+AudioPlayer Application::player = AudioPlayer(false, nullptr, AudioFormatInfo<>::PCMDefault());
+AudioDecoder Application::decoder = AudioDecoder();
 
 // Main code
 int WinMain(  _In_ HINSTANCE hInstance,
@@ -72,7 +75,7 @@ int WinMain(  _In_ HINSTANCE hInstance,
     ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
 
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
+    soundtouch_createInstance();
     // Main loop
     bool done = false;
     GuiMain::AddComponent(new ImportWindow);
@@ -80,13 +83,13 @@ int WinMain(  _In_ HINSTANCE hInstance,
 
 
     //Let's test the new plot
-    AudioDecoder decoder;
-    AudioPlayBuffer<i16> buffer;
-    auto audioFile = decoder.loadAudioFile(L"allTheTime.mp3");
-    decoder.decodeAudioFile(audioFile, buffer);
+
+    AudioPlayBuffer buffer;
+    auto audioFile = Application::decoder.loadAudioFile(L"allTheTime.mp3");
+    Application::decoder.decodeAudioFile(audioFile, buffer);
     auto plot = new WaveformPlot(buffer);
-    AudioPlayer player;
-    player.playAudioBuffer(buffer);
+    Application::player.playAudioBuffer(buffer);
+
     GuiMain::AddComponent(plot);
 
     while (!done)

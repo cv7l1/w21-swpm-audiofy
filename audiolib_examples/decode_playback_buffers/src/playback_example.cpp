@@ -181,7 +181,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance,
 
     //Path is always releative to exe right now. This will change in the future
     //auto audioFile = decoder.loadAudioFile(L"../../../example_playback/song.mp3");
-    auto audioFile = decoder.loadAudioFile(L"song.mp3");
+    auto audioFile = decoder.loadAudioFile(L"../../../song.mp3");
 
     AudioPlayBuffer songBuffer;
     decoder.decodeAudioFile(audioFile, songBuffer);

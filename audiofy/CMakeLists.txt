@@ -22,5 +22,6 @@ target_link_directories(audiofy PUBLIC lib)
 target_link_directories(audiofy PUBLIC lib/glfw/lib-vc2010-64)
 
 target_link_libraries(audiofy imgui_win32_dx11)
+target_link_libraries(audiofy SoundTouchDLL_x64)
 target_link_libraries(audiofy D3D11)
 set_target_properties(audiofy PROPERTIES WIN32_EXECUTABLE TRUE)

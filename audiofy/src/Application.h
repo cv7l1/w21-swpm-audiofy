@@ -5,7 +5,15 @@
 #ifndef AUDIOFY_APPLICATION_H
 #define AUDIOFY_APPLICATION_H
 #include <list>
+#include <al_player.h>
+#include <al_file.h>
 #include "win32/ay_fileManager.h"
+class Application {
+public:
+    static AudioPlayer player;
+    static AudioDecoder decoder;
+};
+
 class ProjectFiles {
 public:
     static void AddFile(FileItem item) {

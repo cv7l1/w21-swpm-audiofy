@@ -4,6 +4,7 @@
 
 #ifndef AUDIOLIB_EXAMPLES1_AY_FILEMANAGER_H
 #define AUDIOLIB_EXAMPLES1_AY_FILEMANAGER_H
+#include<win32_framework.h>
 #include "types.h"
 #include "al_io.h"
 #include <ShlObj.h>
@@ -19,6 +20,8 @@
 #include <functional>
 #include <al_error.h>
 #include <stdexcept>
+#include <shellapi.h>
+
 class FileItem {
 public:
     FileItem(IShellItem* shellItem) : _shellItem(shellItem) {
