@@ -12,29 +12,30 @@
 #include <comdef.h>
 
 void ProjectFileListComponent::Show() {
-    ImGui::Begin("Projekt");
-    std::vector<FileItem>& itemList = ProjectFiles::getItems();
-    ImGui::BeginListBox("");
-    int index = 0;
+    if(ImGui::Begin("Projekt")) {
+        std::vector<FileItem>& itemList = ProjectFiles::getItems();
+        if(ImGui::BeginListBox("")) {
+            int index = 0;
 
-    for(auto item : itemList) {
-        bstr_t itemName(item.getDisplayName());
-        if(ImGui::Selectable(itemName)) {
-            selectedItem = index;
+            for(auto item : itemList) {
+                bstr_t itemName(item.getDisplayName());
+                if(ImGui::Selectable(itemName)) {
+                    selectedItem = index;
+                }
+                index++;
+            }
+            ImGui::EndListBox();
         }
-        index++;
-    }
-    ImGui::EndListBox();
-
-    if(selectedItem != -1) {
-        ImGui::Text("Dateiname: %ls",itemList[selectedItem].getDisplayName());
-        ImGui::Text("Dateityp: %ls", itemList[selectedItem].getFileTypeDescription());
-        ImGui::Text("Größe: %fmb", itemList[selectedItem].getFileSize());
-        if(ImGui::Button("Mehr Informationen")) {
-            GuiMain::AddComponent(new FileInfoWindow(itemList[selectedItem]));
+        if(selectedItem != -1) {
+            ImGui::Text("Dateiname: %ls",itemList[selectedItem].getDisplayName());
+            ImGui::Text("Dateityp: %ls", itemList[selectedItem].getFileTypeDescription());
+            ImGui::Text("Größe: %fmb", itemList[selectedItem].getFileSize());
+            if(ImGui::Button("Mehr Informationen")) {
+                GuiMain::AddComponent(new FileInfoWindow(itemList[selectedItem]));
+            }
         }
-    }
 
-    ImGui::End();
+        ImGui::End();
+    }
 
 }

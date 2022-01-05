@@ -8,6 +8,7 @@
 #include "imgui_impl_dx11.h"
 #include <d3d11.h>
 #include <tchar.h>
+#include <implot.h>
 #include "gui/components/equalizer.h"
 #include "gui/components/leveling.h"
 #include "gui/components/controlElements.h"
@@ -61,6 +62,7 @@ int WinMain(  _In_ HINSTANCE hInstance,
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+    ImPlot::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
 
     // Setup Dear ImGui style
@@ -75,6 +77,18 @@ int WinMain(  _In_ HINSTANCE hInstance,
     bool done = false;
     GuiMain::AddComponent(new ImportWindow);
     GuiMain::AddComponent(new ProjectFileListComponent);
+
+
+    //Let's test the new plot
+    AudioDecoder decoder;
+    AudioPlayBuffer<i16> buffer;
+    auto audioFile = decoder.loadAudioFile(L"allTheTime.mp3");
+    decoder.decodeAudioFile(audioFile, buffer);
+    auto plot = new WaveformPlot(buffer);
+    AudioPlayer player;
+    player.playAudioBuffer(buffer);
+    GuiMain::AddComponent(plot);
+
     while (!done)
     {
         MSG msg;
@@ -121,7 +135,7 @@ int WinMain(  _In_ HINSTANCE hInstance,
     ImGui_ImplDX11_Shutdown();
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
-
+    ImPlot::DestroyContext();
     CleanupDeviceD3D();
     ::DestroyWindow(hwnd);
     ::UnregisterClass(wc.lpszClassName, wc.hInstance);

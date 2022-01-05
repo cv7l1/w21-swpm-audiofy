@@ -107,7 +107,7 @@ public:
         const wchar_t *getExtension() override {return _path;}
 
         u64 getSampleCount() override;
-        u32 getSampleRate() override {return _waveFormat->wBitsPerSample;}
+        u32 getSampleRate() override {return _waveFormat->nSamplesPerSec;}
         AudioFileType getFileType() override;
         IMFSourceReader* getReader() {return _reader.Get();}
         WAVEFORMATEX* getWF() {return _waveFormat;}
