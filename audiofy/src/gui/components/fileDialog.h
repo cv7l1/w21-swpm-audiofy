@@ -1,51 +1,43 @@
+#ifndef FILE_DIALOG_H
+#define FILE_DIALOG_H
 #include "../../win32/ay_fileManager.h"
-
-class ImportWindow {
+#include "IComponent.h"
+#include<comdef.h>
+#include "../GuiMain.h"
+#include "../../Application.h"
+#include "../../../../audiolib/platform/src/al_file.h"
+#include "imgui.h"
+class FileInfoWindow : public IComponent {
 public:
-    static void show();
+    explicit FileInfoWindow(FileItem item) ;
+    void Show() override;
+private:
+    FileItem _item;
+    std::optional<IAudioFile*> audioFile = std::nullopt;
+    bool _open = true;
+};
+
+
+class ProjectAddWindow : public IComponent{
+public:
+    explicit ProjectAddWindow(FileItem item) : _item(item) {}
+    void Show() override;
+private:
+    FileItem _item;
+    bool _close = false;
+};
+
+class ImportWindow : public IComponent {
+
+public:
+    ImportWindow() = default;
+    void Show() override;
+
 private:
     static std::optional<FileItem> selectedFile;
     static void onImportButtonPressed();
 };
-std::optional<FileItem> ImportWindow::selectedFile = std::nullopt;
-
-void ImportWindow::show() {
-    static float f = 0.0f;
-    static int counter = 0;
-
-    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(198, 88), ImGuiCond_FirstUseEver);
-
-    ImGui::Begin("Import", 0, 0);
-    if (ImGui::Button("Öffnen")) {
-        onImportButtonPressed();
-    }
-
-    if(selectedFile.has_value()) {
-        ImGui::Text("Dateiname: %ls", selectedFile.value().getDisplayName());
-        ImGui::Text("Dateityp: %ls", selectedFile.value().getFileTypeDescription());
-        ImGui::Text("Größe: %fmb", selectedFile.value().getFileSize());
-        if(ImGui::Button("Zu Projekt hinzufügen")) {
-
-        }
-        if(ImGui::Button("Abbrechen")) {
-            selectedFile = std::nullopt;
-        }
-    }
-
-    ImGui::End();
-}
-
-HRESULT onFileAccept(FileItem file) {
-    return S_OK;
-}
-
-void ImportWindow::onImportButtonPressed() {
-    OpenFileItemDialog dialog(onFileAccept);
-    dialog.show();
-    ImportWindow::selectedFile = dialog.getResult();
-}
-
+/*
 void showExport() {
     static float f = 0.0f;
     static int counter = 0;
@@ -66,3 +58,5 @@ void showExport() {
 
     ImGui::End();
 }
+ */
+#endif

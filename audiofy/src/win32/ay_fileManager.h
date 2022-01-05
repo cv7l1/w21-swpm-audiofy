@@ -44,6 +44,7 @@ public:
         return ((((_fileAttributes.nFileSizeHigh << 16) | _fileAttributes.nFileSizeLow) / 1024.0f) / 1024.0f);
     }
 
+
 private:
     wchar_t* _sysPath;
     SHFILEINFOW _shellFileInfo;
@@ -54,7 +55,12 @@ private:
     IShellItem* _shellItem;
 
 };
+class AudioFile {
+public:
 
+private:
+    FileItem file;
+};
 class OpenFileItemDialog : public IFileDialogEvents {
 public:
     IFACEMETHODIMP QueryInterface(REFIID riid, void** ppv) {

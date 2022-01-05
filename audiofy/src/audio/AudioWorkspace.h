@@ -8,6 +8,8 @@
 #include<list>
 #include<map>
 #include "al_player.h"
+
+
 struct AudioPosition {
     float start;
     float end;

@@ -14,9 +14,11 @@
 #include "gui/components/plot.h"
 #include "gui/components/mix.h"
 #include "gui/components/cut.h"
-
+#include "gui/GuiMain.h"
+#include "Application.h"
 #include "win32_framework.h"
 #include "win32/ay_fileManager.h"
+#include "gui/components/projectFileListComponent.h"
 
 // Data
 static ID3D11Device*            g_pd3dDevice = NULL;
@@ -31,6 +33,7 @@ void CreateRenderTarget();
 void CleanupRenderTarget();
 
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+std::vector<FileItem> ProjectFiles::files = std::vector<FileItem>();
 
 // Main code
 int WinMain(  _In_ HINSTANCE hInstance,
@@ -70,6 +73,8 @@ int WinMain(  _In_ HINSTANCE hInstance,
 
     // Main loop
     bool done = false;
+    GuiMain::AddComponent(new ImportWindow);
+    GuiMain::AddComponent(new ProjectFileListComponent);
     while (!done)
     {
         MSG msg;
@@ -87,11 +92,12 @@ int WinMain(  _In_ HINSTANCE hInstance,
         ImGui_ImplDX11_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
+        GuiMain::Show();
 
         float* ctrlValues = showControl();
         float* eqData= showEqualizer();
         float* volData = showLeveling();
-        ImportWindow::show();
+        //ImportWindow::show();
         showMixer();
         showCut();
 
