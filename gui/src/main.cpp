@@ -107,7 +107,10 @@ int main(int, char**)
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
-        showPlot();
+		//Demo data
+        const float data[] = { 1,12,11,14,18,1,7,9,11,9,1,12,11,14,18,1,7,9,11,9};
+        int arrSize = sizeof data / sizeof data[0];
+        showPlot(data,arrSize);
         showMixer();
         float* ctrlValues = showControl();
         float* eqData= showEqualizer();
