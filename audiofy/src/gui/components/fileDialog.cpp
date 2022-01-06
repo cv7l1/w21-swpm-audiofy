@@ -70,20 +70,23 @@ void ImportWindow::onImportButtonPressed() {
 }
 
 void ProjectAddWindow::Show() {
+    char buf[50];
     _bstr_t name(_item.getDisplayName());
+    sprintf(buf, "%s", name.operator const char *());
+
     if(_close) {
         return;
     }
 
     ImGui::SetNextWindowSize(ImVec2(198, 88), ImGuiCond_FirstUseEver);
     ImGui::Begin("Zu Projekt hinzufügen", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::InputText("Name", name, name.length());
+    ImGui::InputText("Name", buf, IM_ARRAYSIZE(buf));
 
     if(ImGui::Button("Abbrechen")) {
         _close = true;
     }
     if(ImGui::Button("Hinzufügen")) {
-        ProjectFiles::AddFile(_item);
+        ProjectFiles::AddFile(AudioFile(_item, std::string(buf)));
         _close = true;
     }
     ImGui::End();

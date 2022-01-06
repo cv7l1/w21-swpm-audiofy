@@ -58,12 +58,7 @@ private:
     IShellItem* _shellItem;
 
 };
-class AudioFile {
-public:
 
-private:
-    FileItem file;
-};
 class OpenFileItemDialog : public IFileDialogEvents {
 public:
     IFACEMETHODIMP QueryInterface(REFIID riid, void** ppv) {

@@ -8,7 +8,7 @@
 #include "plot.h"
 #include "IComponent.h"
 #include <array>
-
+#include <format>
 void showPlot(const float data[], int arraysize) {
     static bool fixedSize = false;
     static float dSize = arraysize;
@@ -66,16 +66,26 @@ void showPlot(const float data[], int arraysize) {
 void WaveformPlot::Show() {
     static float counter;
     counter += 50;
-    for(int i = 0; i<max; i++) {
-        float sample = (float)_buffer.getRawData()[i + 1  + counter] / 32768;
-        yData[i] = sample;
-    }
+    u32 bufferIndex = 0;
 
     if(ImGui::Begin("WaveformPlot")) {
-        if(ImPlot::BeginPlot("WaveformPlot"),ImVec2(-1,0), ImPlotFlags_AntiAliased) {
-            ImPlot::PlotLine<float>("AudioData", xData, yData, max);
-            ImPlot::EndPlot();
-            ImGui::End();
+        for(auto& buffer : _buffer) {
+            for(int i = 0; i<max; i++) {
+                float sample = (float)buffer.getRawData()[i + 1  + counter] / 32768;
+                yData[bufferIndex][i] = sample;
+            }
+            bufferIndex++;
         }
+        if(ImPlot::BeginPlot("WaveformPlot")) {
+            u32 dataIndex = 0;
+            for(auto& data : yData) {
+                auto name = std::format("AudioData{}", dataIndex);
+                ImPlot::PlotLine<float>(name.c_str(), xData, data, max);
+                dataIndex++;
+            }
+            ImPlot::EndPlot();
+        }
+        ImGui::End();
     }
 }
+

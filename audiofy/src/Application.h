@@ -8,6 +8,7 @@
 #include <al_player.h>
 #include <al_file.h>
 #include "win32/ay_fileManager.h"
+#include "audio/AudioWorkspace.h"
 class Application {
 public:
     static AudioPlayer player;
@@ -16,15 +17,16 @@ public:
 
 class ProjectFiles {
 public:
-    static void AddFile(FileItem item) {
+    static void AddFile(AudioFile item) {
         files.push_back(item);
     }
-    static std::vector<FileItem>& getItems() {
+
+    static std::vector<AudioFile>& getItems() {
         return files;
     };
 
 private:
-    static std::vector<FileItem> files;
+    static std::vector<AudioFile> files;
 };
 
 #endif //AUDIOFY_APPLICATION_H

@@ -8,18 +8,37 @@
 #include<list>
 #include<map>
 #include "al_player.h"
+#include "../win32/ay_fileManager.h"
+#include<optional>
+#include<string>
 
+class AudioFile {
+public:
+    AudioFile(FileItem& file, std::string name) :  _name(name), _file(file){}
+    const std::string& getProjectName() {
+        return _name;
+    }
+    FileItem& getFile() {
+        return _file;
+    }
 
-struct AudioPosition {
-    float start;
-    float end;
+private:
+    std::string _name;
+    FileItem& _file;
+    AudioPlayBuffer<i16>* pcmBuffer = nullptr;
 };
-
 class AudioTrack {
-    float lengthSec;
-    std::map<float, AudioPlayBuffer<>> buffers;
-    float currentPosition;
+public:
+    AudioTrack() {};
+    int positionStart = 0;
+    int positionEnd= 0;
+
+    u32 start = 0;
+    u32 end = 0;
+
+    std::shared_ptr<AudioFile> file = nullptr;
 };
+
 
 class AudioWorkspace {
     std::list<AudioTrack> audioTracks = std::list<AudioTrack>();

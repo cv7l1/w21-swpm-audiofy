@@ -13,13 +13,12 @@
 
 void ProjectFileListComponent::Show() {
     if(ImGui::Begin("Projekt")) {
-        std::vector<FileItem>& itemList = ProjectFiles::getItems();
+        std::vector<AudioFile>& itemList = ProjectFiles::getItems();
         if(ImGui::BeginListBox("")) {
             int index = 0;
 
             for(auto item : itemList) {
-                bstr_t itemName(item.getDisplayName());
-                ImGui::Selectable(itemName);
+                ImGui::Selectable(item.getProjectName().c_str());
                 selectedItem = index;
                 if(ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoDisableHover)) {
                     ImGui::Text("Moving file");
@@ -33,12 +32,12 @@ void ProjectFileListComponent::Show() {
         }
 
         if(selectedItem != -1) {
-            ImGui::Text("Dateiname: %ls",itemList[selectedItem].getDisplayName());
-            ImGui::Text("Dateityp: %ls", itemList[selectedItem].getFileTypeDescription());
-            ImGui::Text("Größe: %fmb", itemList[selectedItem].getFileSize());
+            ImGui::Text("Dateiname: %ls",itemList[selectedItem].getFile().getDisplayName());
+            ImGui::Text("Dateityp: %ls", itemList[selectedItem].getFile().getFileTypeDescription());
+            ImGui::Text("Größe: %fmb", itemList[selectedItem].getFile().getFileSize());
 
             if(ImGui::Button("Mehr Informationen")) {
-                GuiMain::AddComponent(new FileInfoWindow(itemList[selectedItem]));
+                GuiMain::AddComponent(new FileInfoWindow(itemList[selectedItem].getFile()));
             }
         }
 

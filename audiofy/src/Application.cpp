@@ -34,7 +34,7 @@ void CreateRenderTarget();
 void CleanupRenderTarget();
 
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-std::vector<FileItem> ProjectFiles::files = std::vector<FileItem>();
+std::vector<AudioFile> ProjectFiles::files = std::vector<AudioFile>();
 //DEBUG!
 AudioPlayer Application::player = AudioPlayer(false, nullptr, AudioFormatInfo<>::PCMDefault());
 AudioDecoder Application::decoder = AudioDecoder();
@@ -48,7 +48,7 @@ int WinMain(  _In_ HINSTANCE hInstance,
 
     WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, _T("ImGui Example"), NULL };
     ::RegisterClassEx(&wc);
-    HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("Dear ImGui DirectX11 Example"), WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, NULL, NULL, wc.hInstance, NULL);
+    HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("Audiofy"), WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, NULL, NULL, wc.hInstance, NULL);
 
     // Initialize Direct3D
     if (!CreateDeviceD3D(hwnd))
@@ -80,17 +80,24 @@ int WinMain(  _In_ HINSTANCE hInstance,
     bool done = false;
     GuiMain::AddComponent(new ImportWindow);
     GuiMain::AddComponent(new ProjectFileListComponent);
-
+    GuiMain::AddComponent(new Mixer);
 
     //Let's test the new plot
 
     AudioPlayBuffer buffer;
+    AudioPlayBuffer buffer2;
+
     auto audioFile = Application::decoder.loadAudioFile(L"allTheTime.mp3");
+    auto audioFile2 = Application::decoder.loadAudioFile(L"duvet.ogg");
+
     Application::decoder.decodeAudioFile(audioFile, buffer);
-    auto plot = new WaveformPlot(buffer);
+    Application::decoder.decodeAudioFile(audioFile2, buffer2);
+
+    //auto plot = new WaveformPlot(buffer);
+    //plot->AddBuffer(buffer2);
     Application::player.playAudioBuffer(buffer);
 
-    GuiMain::AddComponent(plot);
+    //GuiMain::AddComponent(plot);
 
     while (!done)
     {
