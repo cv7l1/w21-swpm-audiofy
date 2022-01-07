@@ -64,6 +64,40 @@ void showMixer(audiofile* importedfiles, int length) {
         ImGui::SetDragDropPayload("DND_NAME", &move_to, sizeof(int)); //make sure to update immediately
     }
     ImGui::Unindent();
+
+    static audiofile current_item = {-1,"Not Selected",-1};
+    ImGui::Text("\nDuplicate/Remove file:");
+    if (ImGui::BeginCombo("##combo", current_item.name)) // currentitem = preselected item
+    {
+        for (int n = 0; n < length; n++)
+        {
+            if (importedfiles[n].id != 0) {
+                bool is_selected = (current_item.id == importedfiles[n].id);
+                if (ImGui::Selectable(importedfiles[n].name, is_selected))
+                    current_item = importedfiles[n]; // store selected item
+                if (is_selected)
+                    ImGui::SetItemDefaultFocus();   // initial focus
+            }
+        }
+        ImGui::EndCombo();
+    }
+    if (ImGui::Button("Duplicate"))
+    {
+        if (current_item.id != -1) {
+            //DUPLICATE
+        }
+        current_item = { -1,"Not Selected",-1 };
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Remove"))
+    {
+        if (current_item.id !=-1) {
+            //REMOVE
+        }
+        current_item = { -1,"Not Selected",-1 };
+    }
+
+
     ImGui::End();
 }
 
