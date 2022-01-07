@@ -13,6 +13,7 @@ public:
         for(int i = 0; i<max; ++i) {
             xData[i] = i;
         }
+
         yData.push_back(static_cast<float *>(malloc(max * sizeof(float))));
     }
     void AddBuffer(AudioPlayBuffer<i16>& buffer) {
@@ -26,6 +27,8 @@ private:
     std::vector<float*> yData;
     u32 max;
 
+    u32 start;
+    u32 end;
     std::vector<AudioPlayBuffer<i16>> _buffer = std::vector<AudioPlayBuffer<i16>>();
 };
 

@@ -30,13 +30,16 @@ private:
 class AudioTrack {
 public:
     AudioTrack() {};
+    AudioTrack(AudioFile* file) : file(file) {
+    }
     int positionStart = 0;
     int positionEnd= 0;
 
     u32 start = 0;
     u32 end = 0;
+    int trackCount = 0;
+    AudioFile*  file = nullptr;
 
-    std::shared_ptr<AudioFile> file = nullptr;
 };
 
 

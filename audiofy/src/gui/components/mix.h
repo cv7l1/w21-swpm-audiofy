@@ -152,8 +152,8 @@ public:
         for(auto& item: ProjectFiles::getItems()) {
             sequencer._tracks.emplace_back();
         }
-        sequencer.frameMin = -100;
-        sequencer.frameMax = 1000;
+        sequencer.frameMin = 0;
+        sequencer.frameMax = 60;
     }
     void Show() override;
 

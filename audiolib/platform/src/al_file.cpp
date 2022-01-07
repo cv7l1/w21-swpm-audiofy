@@ -215,7 +215,12 @@ void AudioDecoder::decodeAudioFile(IAudioFile *file, AudioPlayBuffer<>& buffer) 
         wmf->decodeFile(buffer, dynamic_cast<WmfAudio::WmfAudioFile *>(file));
     } else if(file->getFileType() == AudioFileType::OGG) {
         al_ErrorInfo("Got filetype: Vorbis");
-        if(vorbis == nullptr) {vorbis = std::make_unique<VorbisAudio>();}
+        try {
+            if(vorbis == nullptr) {vorbis = std::make_unique<VorbisAudio>();}
+        } catch(std::exception &e) {
+
+        }
+
         vorbis->decodeFile(buffer, dynamic_cast<VorbisAudio::VorbisAudioFile *>(file));
     }
 }
