@@ -18,7 +18,7 @@ void Mixer::Show() {
             static int selectedEntry = -1;
             static int firstFrame = 0;
             static bool expanded = false;
-            static int currentFrame = 100;
+            static int currentFrame = 0;
 
             Sequencer(&sequencer, &currentFrame,
                                    &expanded, &selectedEntry,
@@ -46,11 +46,11 @@ int AudioSequencer::GetItemCount() const {
 
 
 int AudioSequencer::GetItemTypeCount() const {
-    return 2;
+    return ProjectFiles::getItems().size();
 }
 
 const char *AudioSequencer::GetItemTypeName(int i) const {
-    return "AudioTrack";
+    return ProjectFiles::getItems()[i].getProjectName().c_str();
 }
 
 const char *AudioSequencer::GetItemLabel(int i) const {
@@ -62,7 +62,7 @@ const char *AudioSequencer::GetItemLabel(int i) const {
 
 
 void AudioSequencer::Get(int index, int **start, int **end, int *type, unsigned int *color) {
-    AudioTrack item = _tracks[index];
+    AudioTrack& item = _tracks[index];
     if(color) {
         *color = 0xFFAA8080;
     }
@@ -73,13 +73,18 @@ void AudioSequencer::Get(int index, int **start, int **end, int *type, unsigned 
         *end = &item.positionEnd;
     }
     if(type) {
-        *type = 1;
+        *type = item.trackCount;
     }
 }
 
 
 void AudioSequencer::Add(int i) {
-    _tracks.emplace_back();
+    auto item = &ProjectFiles::getItems()[i];
+    auto track = AudioTrack(item);
+    track.positionStart = 0;
+    track.positionEnd = 100;
+    track.trackCount = _tracks.size();
+    _tracks.emplace_back(track);
 }
 
 void AudioSequencer::Del(int i) {
@@ -99,7 +104,7 @@ void AudioSequencer::Paste() {
 }
 
 size_t AudioSequencer::GetCustomHeight(int i) {
-    return 300;
+    return 30;
 }
 
 void AudioSequencer::DoubleClick(int i) {
@@ -107,6 +112,7 @@ void AudioSequencer::DoubleClick(int i) {
 }
 
 void AudioSequencer::CustomDraw(int index, ImDrawList* draw_list, const ImRect& rc, const ImRect& legendRect, const ImRect& clippingRect, const ImRect& legendClippingRect) {
+    /*
     static const char* labels[] = { "Translation", "Rotation" , "Scale" };
 
     rampEdit.mMax = ImVec2(float(frameMax), 1.f);
@@ -123,6 +129,7 @@ void AudioSequencer::CustomDraw(int index, ImDrawList* draw_list, const ImRect& 
     draw_list->PopClipRect();
 
     ImGui::SetCursorScreenPos(rc.Min);
+     */
 }
 
 void AudioSequencer::CustomDrawCompact(int index, ImDrawList* draw_list, const ImRect& rc, const ImRect& clippingRect) {

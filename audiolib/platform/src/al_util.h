@@ -7,6 +7,9 @@
 
 #include "win32_framework.h"
 #include "al_error.h"
+#include "al_debug.h"
+#include <Shlwapi.h>
+#include <io.h>
 
 #define SAFE_RELEASE(punk)  \
 if ((punk) != NULL)  \
@@ -29,8 +32,14 @@ class DllHelper {
 public:
     explicit DllHelper(_In_z_ const wchar_t* libPath) {
         _module = LoadLibraryW(libPath);
-        if(_module == INVALID_HANDLE_VALUE) {
-            throw Win32Exception(GetLastError());
+        if(PathIsDirectoryW(libPath) || !PathFileExistsW(libPath)) {
+            al_ErrorCritical("Unable to find lib");
+
+        }
+        if(_module == NULL) {
+            al_ErrorCritical("Unable to load lib");
+            auto error = GetLastError();
+            throw Win32Exception(error);
         }
     }
     explicit DllHelper() : _module(nullptr) {}
