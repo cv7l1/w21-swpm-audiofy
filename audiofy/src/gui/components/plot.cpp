@@ -79,7 +79,8 @@ void WaveformPlot::Show() {
         if(ImPlot::BeginPlot("WaveformPlot")) {
             u32 dataIndex = 0;
             for(auto& data : yData) {
-                auto name = std::format("AudioData{}", dataIndex);
+                //auto name = std::format("AudioData{}", dataIndex);
+                auto name = std::string("Test");
                 ImPlot::PlotLine<float>(name.c_str(), xData, data, max);
                 dataIndex++;
             }

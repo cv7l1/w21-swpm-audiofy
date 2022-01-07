@@ -14,16 +14,16 @@ public:
 
     ~SoundProcessor();
 
-    void addEffect(Effect e);
+    void addEffect(Effect* e);
 
-    void removeEffect(Effect e);
+    void removeEffect(Effect* e);
 
-    AudioPlayBuffer<> build();
+    void build();
 
     AudioPlayBuffer<> getBuffer();
 
 private:
-    std::vector<Effect> effects;
+    std::vector<Effect*> effects = std::vector<Effect*>();
     AudioPlayBuffer<>* buffer;
 };
 

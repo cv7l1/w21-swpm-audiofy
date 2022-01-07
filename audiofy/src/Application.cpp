@@ -75,7 +75,9 @@ int WinMain(  _In_ HINSTANCE hInstance,
     ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
 
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
     soundtouch_createInstance();
+
     // Main loop
     bool done = false;
     GuiMain::AddComponent(new ImportWindow);
@@ -87,18 +89,21 @@ int WinMain(  _In_ HINSTANCE hInstance,
     AudioPlayBuffer buffer;
     AudioPlayBuffer buffer2;
 
+
     auto audioFile = Application::decoder.loadAudioFile(L"allTheTime.mp3");
-    auto audioFile2 = Application::decoder.loadAudioFile(L"duvet.ogg");
+    //auto audioFile2 = Application::decoder.loadAudioFile(L"duvet.ogg");
 
     Application::decoder.decodeAudioFile(audioFile, buffer);
-    Application::decoder.decodeAudioFile(audioFile2, buffer2);
+    //Application::decoder.decodeAudioFile(audioFile2, buffer2);
 
     //auto plot = new WaveformPlot(buffer);
     //plot->AddBuffer(buffer2);
+
     Application::player.playAudioBuffer(buffer);
 
-    //GuiMain::AddComponent(plot);
-
+    Application::player.playAudioBuffer(buffer);
+    
+    
     while (!done)
     {
         MSG msg;

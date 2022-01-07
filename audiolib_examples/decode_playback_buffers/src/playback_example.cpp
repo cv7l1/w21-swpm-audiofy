@@ -94,7 +94,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance,
      * If you want to construct multiple audio players (which you really shouldn't...)
      * please make sure that all other instances have been destroyed.
      */
-    AudioPlayer audioPlayer(true);
+    AudioPlayer audioPlayer();
 
     /*
      * We can set a callback, which the audio player is going to call if a critical error
@@ -185,6 +185,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance,
 
     AudioPlayBuffer songBuffer;
     decoder.decodeAudioFile(audioFile, songBuffer);
+
 
     //We can also set how much of the buffer to play
     songBuffer.setPlayFullBuffer(false);

@@ -11,18 +11,19 @@ SoundProcessor::~SoundProcessor(){
 
 }
 
-void SoundProcessor::addEffect(Effect e) {
+void SoundProcessor::addEffect(Effect* e) {
     effects.push_back(e);
 }
 
-void SoundProcessor::removeEffect(Effect e) {
+void SoundProcessor::removeEffect(Effect* e) {
     //effects.erase(effects.size()-1);
 }
 
-AudioPlayBuffer<> SoundProcessor::build() {
+void SoundProcessor::build() {
     for(auto &effect : effects) {
-        effect.applyEffect(*this->buffer);
+        effect->applyEffect(*this->buffer);
     }
+
 }
 
 AudioPlayBuffer<> SoundProcessor::getBuffer() {
