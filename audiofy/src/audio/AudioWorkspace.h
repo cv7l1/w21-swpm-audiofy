@@ -41,7 +41,12 @@ public:
     AudioFile*  file = nullptr;
 
 };
+class AudioContext {
+public:
 
+private:
+    AudioPlayer player;
+};
 
 class AudioWorkspace {
     std::list<AudioTrack> audioTracks = std::list<AudioTrack>();

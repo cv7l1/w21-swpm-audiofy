@@ -80,7 +80,7 @@ public:
     /// Retrieve the default Audio Endpoint for a specific role
     /// @param [In] role Role
     /// \return The Device, null if no device could be found for the role
-    std::shared_ptr<AudioDevice> getDefaultDevice(AudioDeviceRole role);
+    AudioDevice* getDefaultDevice(AudioDeviceRole role);
 
     /// Retrieve all currently plugged in Audio Endpoints for a specific role
     /// \param [In] role Role

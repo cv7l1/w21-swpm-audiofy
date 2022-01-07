@@ -18,8 +18,9 @@ void ProjectFileListComponent::Show() {
             int index = 0;
 
             for(auto item : itemList) {
-                ImGui::Selectable(item.getProjectName().c_str());
-                selectedItem = index;
+                if(ImGui::Selectable(item.getProjectName().c_str())) {
+                    selectedItem = index;
+                }
                 if(ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoDisableHover)) {
                     ImGui::Text("Moving file");
                     ImGui::SetDragDropPayload("FILE_DD", &selectedItem, sizeof(int));

@@ -21,6 +21,8 @@
 #include "win32/ay_fileManager.h"
 #include "gui/components/projectFileListComponent.h"
 #include "soundtouch/SoundTouchDLL.h"
+#include "gui/components/DeviceListComponent.h"
+
 // Data
 static ID3D11Device*            g_pd3dDevice = NULL;
 static ID3D11DeviceContext*     g_pd3dDeviceContext = NULL;
@@ -46,6 +48,7 @@ int WinMain(  _In_ HINSTANCE hInstance,
               _In_ int       nShowCmd)
 {
 
+    CoInitializeEx(nullptr, COINIT_MULTITHREADED);
     WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, _T("ImGui Example"), NULL };
     ::RegisterClassEx(&wc);
     HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("Audiofy"), WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, NULL, NULL, wc.hInstance, NULL);
@@ -80,12 +83,12 @@ int WinMain(  _In_ HINSTANCE hInstance,
 
     // Main loop
     bool done = false;
+    AudioDeviceManager deviceManager;
     GuiMain::AddComponent(new ImportWindow);
     GuiMain::AddComponent(new ProjectFileListComponent);
     GuiMain::AddComponent(new Mixer);
-
+    GuiMain::AddComponent(new DeviceListComponent(&deviceManager));
     //Let's test the new plot
-
     AudioPlayBuffer buffer;
     AudioPlayBuffer buffer2;
 

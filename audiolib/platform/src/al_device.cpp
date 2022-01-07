@@ -110,7 +110,7 @@ bool AudioDevice::operator!=(const AudioDevice &rhs) const {
     return !(rhs == *this);
 }
 
-std::shared_ptr<AudioDevice> AudioDeviceManager::getDefaultDevice(const AudioDeviceRole role) {
+AudioDevice* AudioDeviceManager::getDefaultDevice(const AudioDeviceRole role) {
     using Microsoft::WRL::ComPtr;
 
     IMMDevice* dev;
@@ -123,13 +123,13 @@ std::shared_ptr<AudioDevice> AudioDeviceManager::getDefaultDevice(const AudioDev
         if(result == E_NOTFOUND) {return nullptr;}
         else {throw Win32Exception(result);}
     }
-    return std::make_shared<AudioDevice>(dev);
+    return new AudioDevice(dev);
 }
 
 std::vector<AudioDevice> AudioDeviceManager::getAudioDeviceList(const AudioDeviceRole role) {
 
     using Microsoft::WRL::ComPtr;
-    ComPtr<IMMDeviceCollection> devices;
+    IMMDeviceCollection* devices;
     u32 deviceCount = 0;
 
     throwIfFailed(_enumerator->EnumAudioEndpoints(static_cast<EDataFlow>(role),
