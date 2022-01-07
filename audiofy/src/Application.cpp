@@ -9,6 +9,7 @@
 #include <d3d11.h>
 #include <tchar.h>
 #include <implot.h>
+#include "al_debug.h"
 #include "gui/components/equalizer.h"
 #include "gui/components/leveling.h"
 #include "gui/components/controlElements.h"
@@ -20,7 +21,7 @@
 #include "win32_framework.h"
 #include "win32/ay_fileManager.h"
 #include "gui/components/projectFileListComponent.h"
-#include "soundtouch/SoundTouchDLL.h"
+#include "SoundTouchDLL.h"
 #include "gui/components/DeviceListComponent.h"
 
 // Data
@@ -38,17 +39,10 @@ void CleanupRenderTarget();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 std::vector<AudioFile> ProjectFiles::files = std::vector<AudioFile>();
 //DEBUG!
-AudioPlayer Application::player = AudioPlayer(false, nullptr, AudioFormatInfo<>::PCMDefault());
-AudioDecoder Application::decoder = AudioDecoder();
-
-// Main code
-int WinMain(  _In_ HINSTANCE hInstance,
-              _In_ HINSTANCE hPrevInstance,
-              _In_ LPSTR     lpCmdLine,
-              _In_ int       nShowCmd)
-{
-
+int setup(GUIWin32Context* context) {
     CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+    Console::setup();
+
     WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, _T("ImGui Example"), NULL };
     ::RegisterClassEx(&wc);
     HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("Audiofy"), WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, NULL, NULL, wc.hInstance, NULL);
@@ -78,34 +72,85 @@ int WinMain(  _In_ HINSTANCE hInstance,
     ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
 
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+    *context = GUIWin32Context {
+        hwnd,
+        wc,
+        clear_color
+    };
+    return 0;
+}
 
-    soundtouch_createInstance();
+//Run some tests to ensure, that the application is in a working state
+bool SanityCheck(bool debug) {
+    if(debug) {
+        al_ErrorInfo("Running sanity checks...");
+    }
+    //Check if necessary .dlls exist
+    if(!PathFileExistsW(L"vorbisfile.dll")) {
+        al_ErrorCritical("vorbisfile.dll not found, ensure that .dll is in the same location as the .exe");
+        MessageBoxW(nullptr, L"Unable to load vorbis library, the program may be in an unstable state", nullptr, MB_OK);
+    }
+    return true;
+}
 
-    // Main loop
-    bool done = false;
+void setupGUI(AudioContext& context) {
+    al_ErrorInfo("Setting up GUI");
     AudioDeviceManager deviceManager;
+
     GuiMain::AddComponent(new ImportWindow);
     GuiMain::AddComponent(new ProjectFileListComponent);
     GuiMain::AddComponent(new Mixer);
-    GuiMain::AddComponent(new DeviceListComponent(&deviceManager));
+    GuiMain::AddComponent(new DeviceListComponent(&context, &deviceManager));
+
     //Let's test the new plot
     AudioPlayBuffer buffer;
     AudioPlayBuffer buffer2;
 
 
-    auto audioFile = Application::decoder.loadAudioFile(L"allTheTime.mp3");
-    auto audioFile2 = Application::decoder.loadAudioFile(L"duvet.ogg");
+    auto audioFile = context._decoder->loadAudioFile(L"allTheTime.mp3");
+    auto audioFile2 = context._decoder->loadAudioFile(L"duvet.ogg");
 
-    Application::decoder.decodeAudioFile(audioFile, buffer);
+    context._decoder->decodeAudioFile(audioFile, buffer);
     //Application::decoder.decodeAudioFile(audioFile2, buffer2);
 
     auto plot = new WaveformPlot(buffer);
     plot->AddBuffer(buffer);
 
-    Application::player.playAudioBuffer(buffer);
-    Application::player.playAudioBuffer(buffer);
+    context._player->playAudioBuffer(buffer);
+    context._player->playAudioBuffer(buffer);
+
     GuiMain::AddComponent(plot);
-    
+    al_ErrorInfo("Setting up GUI done");
+
+}
+
+// Main code
+int WinMain(  _In_ HINSTANCE hInstance,
+              _In_ HINSTANCE hPrevInstance,
+              _In_ LPSTR     lpCmdLine,
+              _In_ int       nShowCmd)
+{
+
+    GUIWin32Context context;
+
+    auto result = setup(&context);
+    if(result != 0) {
+        MessageBoxW(nullptr, L"Unable to create gui", nullptr, MB_OK);
+        return 1;
+    }
+
+    SanityCheck(true);
+    // Main loop
+    bool done = false;
+
+    try {
+        AudioContext audioContext;
+        setupGUI(audioContext);
+    } catch (std::exception& e) {
+        return 1;
+    }
+
+
     while (!done)
     {
         MSG msg;
@@ -139,7 +184,7 @@ int WinMain(  _In_ HINSTANCE hInstance,
 
         // Rendering
         ImGui::Render();
-        const float clear_color_with_alpha[4] = { clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w };
+        const float clear_color_with_alpha[4] = { context.clear_color.x * context.clear_color.w, context.clear_color.y * context.clear_color.w, context.clear_color.z * context.clear_color.w, context.clear_color.w };
         g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, NULL);
         g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, clear_color_with_alpha);
         ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
@@ -154,8 +199,8 @@ int WinMain(  _In_ HINSTANCE hInstance,
     ImGui::DestroyContext();
     ImPlot::DestroyContext();
     CleanupDeviceD3D();
-    ::DestroyWindow(hwnd);
-    ::UnregisterClass(wc.lpszClassName, wc.hInstance);
+    ::DestroyWindow(context.hwnd);
+    ::UnregisterClass(context.windowClass.lpszClassName, context.windowClass.hInstance);
 
     return 0;
 }
@@ -242,3 +287,4 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     }
     return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }
+

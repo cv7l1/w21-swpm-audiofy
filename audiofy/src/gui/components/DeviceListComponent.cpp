@@ -5,7 +5,7 @@
 #include <comutil.h>
 #include "DeviceListComponent.h"
 #include "imgui.h"
-DeviceListComponent::DeviceListComponent(AudioDeviceManager *deviceManager) : _deviceManager(deviceManager){
+DeviceListComponent::DeviceListComponent(AudioContext* context, AudioDeviceManager *deviceManager) : _deviceManager(deviceManager), _audioContext(context){
     currentDeviceList = _deviceManager->getAudioDeviceList(AudioDeviceRole::Playback);
     currentDefaultDevice = _deviceManager->getDefaultDevice(AudioDeviceRole::Playback);
 }
@@ -41,7 +41,9 @@ void DeviceListComponent::Show() {
                 currentDefaultDevice = _deviceManager->getDefaultDevice(AudioDeviceRole::Playback);
             }
             if(ImGui::Button("Use")) {
+                _audioContext->_player->setDevice(&currentDeviceList[selectedDevice]);
             }
+
             ImGui::SameLine();
 
             if(selectedDevice != -1) {

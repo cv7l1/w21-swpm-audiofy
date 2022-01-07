@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
 project(audiofy)
-set(CMAKE_CXX_STANDARD 20)
 add_compile_options(/std:c++latest)
 
 file(GLOB_RECURSE imgui_SRC "src/gui/imgui/*.cpp")
@@ -19,9 +18,11 @@ add_executable(audiofy src/Application.cpp src/win32/ay_fileManager.cpp src/audi
         src/gui/components/controlElements.h src/gui/components/cut.h src/gui/components/equalizer.h src/gui/components/fileDialog.h src/gui/components/leveling.h src/gui/components/mix.h src/gui/components/plot.h src/gui/components/projectFileListComponent.cpp src/gui/components/projectFileListComponent.h src/gui/GuiMain.cpp src/gui/GuiMain.h src/gui/components/IComponent.cpp src/gui/components/IComponent.h src/Application.h src/gui/components/fileDialog.cpp src/gui/components/plot.cpp src/gui/components/mix.cpp src/soundprocessor/SoundProcessor.cpp src/gui/components/DeviceListComponent.cpp src/gui/components/DeviceListComponent.h)
 
 
-target_include_directories(audiofy PUBLIC include)
+#target_include_directories(audiofy PUBLIC include)
+target_include_directories(audiofy PUBLIC ../audiolib/platform/src)
 target_include_directories(audiofy PUBLIC include/vorbis)
 target_include_directories(audiofy PUBLIC include/imgui)
+target_include_directories(audiofy PUBLIC include/soundtouch)
 
 target_link_directories(audiofy PUBLIC lib)
 target_link_libraries(audiofy comsuppw)

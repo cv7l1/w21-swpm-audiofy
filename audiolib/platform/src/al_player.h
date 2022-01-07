@@ -127,7 +127,7 @@ public:
 class AudioPlayer : IXAudio2EngineCallback, IXAudio2VoiceCallback {
 public:
     explicit AudioPlayer(bool debug = false,
-                         _In_opt_ std::shared_ptr<AudioDevice> device = nullptr,
+                         _In_opt_ AudioDevice* device = nullptr,
                          _In_opt_ AudioFormatInfo<> info = AudioFormatInfo<>::PCMDefault());
 
     void    playAudioBuffer(_In_ AudioPlayBuffer<>& buffer,
@@ -145,6 +145,7 @@ public:
     void    play();
     void    pause();
     void    stopLoop();
+    void    setDevice(AudioDevice* device);
 
     STDMETHODIMP_(void) OnCriticalError(HRESULT error) override {
         onErrorCallback();
@@ -176,14 +177,14 @@ private:
     std::list<IAudioPlayerObserver*> _observer;
     bool paused = true;
     bool _debug;
-    Microsoft::WRL::ComPtr<IXAudio2> _context = nullptr;
+    IXAudio2* _context = nullptr;
     IXAudio2MasteringVoice* _master = nullptr;
 
     IXAudio2SourceVoice* frontVoice = nullptr;
 
     std::unique_ptr<AudioPlayBuffer<>> frontAudioBuffer = std::make_unique<AudioPlayBuffer<>>();
 
-    std::shared_ptr<AudioDevice> _currentDevice = nullptr;
+    AudioDevice* _currentDevice = nullptr;
     AudioFormatInfo<> currentAudioFormat;
 
 };

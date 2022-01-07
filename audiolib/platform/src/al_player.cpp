@@ -27,8 +27,8 @@ template<typename T> XAUDIO2_BUFFER AudioPlayBuffer<typename T>::toXAudioBuffer(
 }
 
 
-AudioPlayer::AudioPlayer(bool debug, std::shared_ptr<AudioDevice> device, AudioFormatInfo<> info) :
-        _currentDevice(std::move(device)), currentAudioFormat(info), _debug(debug) {
+AudioPlayer::AudioPlayer(bool debug, AudioDevice* device, AudioFormatInfo<> info) :
+        _currentDevice(device), currentAudioFormat(info), _debug(debug) {
 
     initEngine();
 }
@@ -125,9 +125,18 @@ void AudioPlayer::playAudioBuffer(AudioPlayBuffer<>& buffer, bool start) {
 void AudioPlayer::initEngine() {
     if(_context || _master) {
         al_ErrorInfo("XAudio2 Engine already exists: Release");
+        frontVoice->Stop();
+
+        frontVoice->DestroyVoice();
+        frontVoice = nullptr;
+        
         _master->DestroyVoice();
+        _master = nullptr;
+        _context->StopEngine();
+
         _context->Release();
     }
+
     al_ErrorInfo("Create XAudio2 Engine...");
     if(_debug) {al_ErrorInfo("...with Debug capabilites");}
 
@@ -135,14 +144,14 @@ void AudioPlayer::initEngine() {
     al_ErrorInfo("Init COM\n");
     throwIfFailed(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
 
-    throwIfFailed(XAudio2Create(_context.GetAddressOf(), flags, XAUDIO2_USE_DEFAULT_PROCESSOR));
+    throwIfFailed(XAudio2Create(&_context, flags, XAUDIO2_USE_DEFAULT_PROCESSOR));
     al_ErrorInfo("XAudio2 Context created");
     al_ErrorInfo("Register XAudio2 Callbacks");
     throwIfFailed(_context->RegisterForCallbacks(this));
 
     if(_debug) {
         XAUDIO2_DEBUG_CONFIGURATION config {0};
-        config.TraceMask = XAUDIO2_LOG_ERRORS | XAUDIO2_LOG_WARNINGS;
+        config.TraceMask = XAUDIO2_LOG_ERRORS | XAUDIO2_LOG_WARNINGS | XAUDIO2_LOG_INFO | XAUDIO2_LOG_API_CALLS | XAUDIO2_LOG_FUNC_CALLS;
         config.BreakMask = XAUDIO2_LOG_ERRORS;
         config.LogFileline = true;
         _context->SetDebugConfiguration(&config);
@@ -152,8 +161,9 @@ void AudioPlayer::initEngine() {
     WarnOnNull(_currentDevice, "No device: Use default");
     if(_currentDevice) {
         al_ErrorInfo("Using device: ");
-        al_ErrorInfo(_bstr_t(_currentDevice->getDeviceName().value()));
+        //al_ErrorInfo(_bstr_t(_currentDevice->getDeviceName().value()));
     }
+
     throwIfFailed(_context->CreateMasteringVoice(&_master,
                                                  XAUDIO2_DEFAULT_CHANNELS,
                                                  44100,
@@ -161,10 +171,10 @@ void AudioPlayer::initEngine() {
                                                  (_currentDevice != nullptr) ? _currentDevice->getDeviceID() : nullptr,
                                                  nullptr,
                                                  AudioCategory_Media));
+
     if(_master == nullptr) {throw Win32Exception(GetLastError());}
 
     auto wf = currentAudioFormat.toWaveFormat();
-    al_ErrorInfo("Create source Voice");
     throwIfFailed(_context->CreateSourceVoice(&frontVoice,
                                               &wf,
                                               0,
@@ -226,3 +236,12 @@ void AudioPlayer::OnLoopEnd(void *pBufferContext) {
     al_ErrorInfo("Loop end");
 }
 
+void AudioPlayer::setDevice(AudioDevice *device) {
+    _debug = true;
+    if(device != nullptr) {
+        _currentDevice = device;
+    }
+    initEngine();
+    submitBuffer();
+    this->play();
+}

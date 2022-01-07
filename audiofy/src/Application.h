@@ -9,10 +9,19 @@
 #include <al_file.h>
 #include "win32/ay_fileManager.h"
 #include "audio/AudioWorkspace.h"
+#include "imgui.h"
+struct GUIWin32Context {
+    HWND hwnd;
+    WNDCLASSEX windowClass;
+    ImVec4 clear_color;
+};
+
+int setup(GUIWin32Context* context);
+bool SanityCheck(bool debug = false);
+void setupGUI(AudioContext& context);
+
 class Application {
 public:
-    static AudioPlayer player;
-    static AudioDecoder decoder;
 };
 
 class ProjectFiles {

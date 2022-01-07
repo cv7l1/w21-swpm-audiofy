@@ -8,12 +8,14 @@
 
 #include <al_device.h>
 #include "IComponent.h"
+#include "../../audio/AudioWorkspace.h"
 
 class DeviceListComponent : public IComponent{
 public:
-    DeviceListComponent(AudioDeviceManager* deviceManager);
+    DeviceListComponent(AudioContext* context, AudioDeviceManager* deviceManager);
     void Show() override;
 private:
+    AudioContext* _audioContext;
     AudioDeviceManager* _deviceManager;
     std::vector<AudioDevice> currentDeviceList = std::vector<AudioDevice>();
     AudioDevice* currentDefaultDevice;

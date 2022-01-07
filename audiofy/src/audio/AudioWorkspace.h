@@ -8,9 +8,12 @@
 #include<list>
 #include<map>
 #include "al_player.h"
+#include "al_file.h"
+
 #include "../win32/ay_fileManager.h"
 #include<optional>
 #include<string>
+#include <al_file.h>
 
 class AudioFile {
 public:
@@ -43,9 +46,10 @@ public:
 };
 class AudioContext {
 public:
+    AudioContext();
 
-private:
-    AudioPlayer player;
+    AudioPlayer* _player;
+    AudioDecoder* _decoder;
 };
 
 class AudioWorkspace {
