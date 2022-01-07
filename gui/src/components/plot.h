@@ -52,4 +52,5 @@ void showPlot(const float data[], int arraysize) {
 	ImGui::SliderFloat("(From Start)###FixedSize", &dSize, 0.0f, (float)arraysize);
 	
 	ImGui::End();
+	delete cutData;
 }

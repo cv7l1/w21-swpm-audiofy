@@ -111,7 +111,9 @@ int main(int, char**)
         const float data[] = { 1,12,11,14,18,1,7,9,11,9,1,12,11,14,18,1,7,9,11,9};
         int arrSize = sizeof data / sizeof data[0];
         showPlot(data,arrSize);
-        showMixer();
+        static audiofile importedfiles[] = { {100,"test.mp3",1},{60,"test.wav",2},{500,"old.mp3",3},{0,"Unused",0} };
+        int filesSize = sizeof importedfiles / sizeof importedfiles[0];
+        showMixer(importedfiles,filesSize);
         float* ctrlValues = showControl();
         float* eqData= showEqualizer();
         float* volData = showLeveling();
