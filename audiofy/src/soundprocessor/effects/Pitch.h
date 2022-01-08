@@ -7,14 +7,14 @@
 class Pitch : public Effect {
 
 public:
-    Pitch::Pitch(float p) : pitch(p) {
+    Pitch(float p) : Effect::Effect() , pitch(p) {
     }
 
-    ~Pitch::Pitch() {
+    ~Pitch() {
     }
 
     void applyEffect(AudioPlayBuffer<>& buffer, HANDLE h) override {
-        soundtouch_setPitch(h,pitch);
+        soundtouch_setPitchSemiTones(h,pitch);
     }
 
 private:

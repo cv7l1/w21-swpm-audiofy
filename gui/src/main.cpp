@@ -82,7 +82,7 @@ int main(int, char**)
 
     // Our state
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
+    ImVec4* colors = ImGui::GetStyle().Colors;
     // Main loop
     bool done = false;
     while (!done)
@@ -108,7 +108,7 @@ int main(int, char**)
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
-        showToolBar();
+        showToolBar(colors);
         const float data[] = { 1,12,11,14,18,1,7,9,11,9,1,12,11,14,18,1,7,9,11,9};
         int arrSize = sizeof data / sizeof data[0];
         showPlot(data,arrSize);

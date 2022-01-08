@@ -7,10 +7,10 @@
 class Tempo : public Effect {
 
 public:
-    Tempo::Tempo(float t) : tempo(t) {
+    Tempo(float t) : Effect::Effect(), tempo(t) {
     }
 
-    ~Tempo::Tempo() {
+    ~Tempo() {
     }
 
     void applyEffect(AudioPlayBuffer<>& buffer, HANDLE h) override {

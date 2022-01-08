@@ -6,15 +6,15 @@
 class Volume : public Effect {
 
 public:
-    Volume::Volume(int v) : volume(v) {
+    Volume(int v) : Effect::Effect(), volume(v) {
     }
 
-    ~Volume::Volume() {
+    ~Volume() {
     }
 
     void applyEffect(AudioPlayBuffer<>& buffer,HANDLE h) override {
         for (auto& sample : buffer.getRawData()) {
-            sample += vol;
+            sample += volume;
         }     
     }
 
