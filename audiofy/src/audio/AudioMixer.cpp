@@ -5,27 +5,50 @@
 #include "AudioMixer.h"
 #include "samplerate.h"
 
-void AudioMixer::process(AudioPlayBuffer<>* buffer)
+
+
+void AudioMixer::mixTrack(AudioTrack* track)
 {
-	std::vector<float*> tempFloatBuffers;
-	std::vector<float*> resampledBuffers;
-
-	for (AudioPlayBuffer<>* mBuffer : submittedBuffers) {
-		auto floatBuffer = static_cast<float*>(malloc(buffer->getCurrentBufferSize() * sizeof(float)));
-		tempFloatBuffers.push_back(floatBuffer);
-		src_short_to_float_array(mBuffer->getRawData().data(), floatBuffer, buffer->getCurrentBufferSize());
-
-		if (mBuffer->getAudioFormat().sampleRate != commonSampleRate) {
-			
-		}
-	}
-
-		
-	for (auto ptr : tempFloatBuffers) {
-		free(ptr);
-	}
+	submittedBuffers.push_back(track);
+	currentBufferPosition++;
+	
+	mix();
 }
 
-void AudioMixer::mix(std::vector<float*> tempBuffers)
+void AudioMixer::mix()
 {
+	AudioTrack* newTrack = submittedBuffers[currentBufferPosition];
+	u64 sampleRate = newTrack->buffer.getAudioFormat().sampleRate;
+	auto newTrackBuffer = newTrack->buffer;
+
+	int sepCounter = 0;
+	for (int currentPosition = newTrack->positionStart * sampleRate;
+		currentPosition <= newTrack->positionEnd * sampleRate;
+		++currentPosition) 
+	{
+		int a = 111; // first sample (-32768..32767)
+		int b = 222; // second sample
+		int m; // mixed result will go here
+
+		// Make both samples unsigned (0..65535)
+		a += 32768;
+		b += 32768;
+
+		// Pick the equation
+		if ((a < 32768) || (b < 32768)) {
+			// Viktor's first equation when both sources are "quiet"
+			// (i.e. less than middle of the dynamic range)
+			m = a * b / 32768;
+		}
+		else {
+			// Viktor's second equation when one or both sources are loud
+			m = 2 * (a + b) - (a * b) / 32768 - 65536;
+		}
+
+		// Output is unsigned (0..65536) so convert back to signed (-32768..32767)
+		if (m == 65536) m = 65535;
+		m -= 32768;
+				
+	}
+			
 }

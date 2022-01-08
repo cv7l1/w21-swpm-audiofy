@@ -37,7 +37,9 @@ int main(int, char**)
     WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, _T("Audiofy"), NULL };
     ::RegisterClassEx(&wc);
     HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("Audiofy"), WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, NULL, NULL, wc.hInstance, NULL);
-
+    
+    //Collaborator proposal #412 made by V.Traue: Increase ram usage so that program appears to do 
+    VirtualAlloc()
     // Initialize Direct3D
     if (!CreateDeviceD3D(hwnd))
     {

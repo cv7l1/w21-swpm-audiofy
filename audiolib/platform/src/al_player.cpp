@@ -109,7 +109,7 @@ void AudioPlayer::submitBuffer() {
     throwIfFailed(frontVoice->SetSourceSampleRate(frontAudioBuffer->getAudioFormat().sampleRate));
     al_ErrorInfo("Submit buffer to front voice");
     throwIfFailed(frontVoice->SubmitSourceBuffer(&xBuffer));
-    al_ErrorInfo("Wé're good!");
+    al_ErrorInfo("We're good!");
 }
 
 void AudioPlayer::playAudioBuffer(AudioPlayBuffer<>& buffer, bool start) {
@@ -191,6 +191,7 @@ void AudioPlayer::initEngine() {
 
 void AudioPlayer::seekToSample(const u64 sampleIndex) {
     bool wasPlaying = isPlaying();
+
     if(!sampleIndex) {
         frontAudioBuffer->setPlayCursor(0);
         frontAudioBuffer->setPlayLength(0);
@@ -256,6 +257,7 @@ void AudioPlayer::setDevice(AudioDevice *device) {
 }
 
 void AudioPlayer::submitDynamicBuffer(AudioPlayBuffer<> &buffer, int index) {
+
     IXAudio2SourceVoice* voice;
     auto wf = buffer.getAudioFormat().toWaveFormat();
     throwIfFailed(_context->CreateSourceVoice(&voice, &wf, 0, XAUDIO2_DEFAULT_FREQ_RATIO, this, nullptr, nullptr));
@@ -263,6 +265,7 @@ void AudioPlayer::submitDynamicBuffer(AudioPlayBuffer<> &buffer, int index) {
     auto xBuffer = buffer.toXAudioBuffer();
     voice->SubmitSourceBuffer(&xBuffer);
     voices[index] = voice;
+
 }
 
 void AudioPlayer::playDynamicBuffer(int index) {

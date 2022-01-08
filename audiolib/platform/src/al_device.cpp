@@ -17,7 +17,7 @@ void AudioDeviceManager::Attach(_In_ IAudioDeviceNotificationObserver* observer)
 
 HRESULT AudioDeviceManager::OnDefaultDeviceChanged(EDataFlow flow, ERole role, LPCWSTR pwstrDeviceID) {
     for(auto &observer : _observers) {
-        observer->OnDefaultDeviceChanged(static_cast<AudioDeviceRole>(role), pwstrDeviceID);
+        //observer->OnDefaultDeviceChanged(static_cast<AudioDeviceRole>(role), pwstrDeviceID);
     }
     return S_OK;
 }
@@ -38,7 +38,7 @@ HRESULT AudioDeviceManager::OnDeviceRemoved(LPCWSTR pwstrDeviceId) {
 
 HRESULT AudioDeviceManager::OnDeviceStateChanged(LPCWSTR pwstrDeviceId, DWORD dwNewState) {
     for(auto &observer : _observers) {
-        observer->OnDeviceStateChanged(pwstrDeviceId, dwNewState);
+        //observer->OnDeviceStateChanged(pwstrDeviceId, dwNewState);
     }
     return S_OK;
 }

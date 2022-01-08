@@ -110,15 +110,19 @@ void AudioSequencer::Get(int index, int **start, int **end, int *type, unsigned 
 
 void bufferTrackResample(AudioTrack& track) {
     u32 targetSampleRate = 44100;
+    al_ErrorInfo("Resampling");
+
     auto sampleCount = track.file->audioInfo->getSampleCount();
     u32 frameCount = sampleCount * 2;
-
     u32 oldFrameCount = track.file->audioInfo->getLengthSeconds() * track.file->audioInfo->getSampleRate();
     u32 newFrameCount = track.file->audioInfo->getLengthSeconds() * targetSampleRate * 2;
+    auto messageString = std::format("old sample rate: {} target sample rate: {}", track.file->audioInfo->getSampleRate(), targetSampleRate);
+    al_ErrorInfo(messageString.c_str());
 
     auto floatBuffer = static_cast<float*>(malloc(sizeof(float) * frameCount));
     auto tempResBuffer = static_cast<float*>(malloc(newFrameCount * sizeof(float)));
 
+    al_ErrorInfo("Converting target to float buffer");
     src_short_to_float_array(track.buffer.getRawData().data(), floatBuffer, frameCount);
     
     SRC_DATA srcData = { 0 };
@@ -129,16 +133,29 @@ void bufferTrackResample(AudioTrack& track) {
 
     srcData.data_out = tempResBuffer;
     srcData.src_ratio = (float)targetSampleRate / (float)track.buffer.getAudioFormat().sampleRate;
-    
-    auto result = src_simple(&srcData, SRC_LINEAR, 2);
-    auto error = src_strerror(result);
-    al_ErrorCritical(error);
-    src_float_to_short_array(tempResBuffer, track.buffer.getRawData().data(), sampleCount);
 
+    al_ErrorInfo("Resample");
+    auto result = src_simple(&srcData, SRC_LINEAR, 2);
+    al_ErrorInfo("Resample done");
+
+    if (result != 0) {
+        auto error = src_strerror(result);
+        al_ErrorCritical(error);
+        throw std::exception();
+    }
+    al_ErrorInfo("Convert back to i16");
+    src_float_to_short_array(tempResBuffer, track.buffer.getRawData().data(), sampleCount);
+    al_ErrorInfo("Convert done");
     AudioFormatInfo info = track.buffer.getAudioFormat();
     info.sampleRate = targetSampleRate;
-    
+       
+    auto stringMessage = std::format("new buffer size: {}", srcData.output_frames_gen * 2);
+
+    track.buffer.getRawData().resize(srcData.output_frames_gen * 2);
     track.buffer.setAudioFormat(info);
+
+    al_ErrorInfo("Resampling done");
+   
     free(floatBuffer);
     free(tempResBuffer);
 }
@@ -149,6 +166,7 @@ void AudioSequencer::Add(int i) {
     auto track = AudioTrack(item);
     track.positionStart = 0;
     track.positionEnd = (int)item->audioInfo->getLengthSeconds();
+
     if(track.buffer.getCurrentBufferSize() == 0) {
         try {
             _context->_decoder->decodeAudioFile(track.file->audioInfo, track.buffer);
@@ -157,9 +175,11 @@ void AudioSequencer::Add(int i) {
             return;
         }
     }
+
 	if (track.buffer.getAudioFormat().sampleRate != 44100) {
 		bufferTrackResample(track);
 	}
+
 	_context->_player->playAudioBuffer(track.buffer);
 	_context->_player->play();
     track.trackCount = _tracks.size();
