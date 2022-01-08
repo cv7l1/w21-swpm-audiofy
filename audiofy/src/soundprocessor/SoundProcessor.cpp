@@ -5,7 +5,7 @@
 #include "SoundProcessor.h"
 
 SoundProcessor::SoundProcessor(AudioPlayBuffer<>* buffer)
-: buffer(buffer) , h(soundtouch_createInstance()) { }
+: buffer(buffer) , soundtouchHandle(soundtouch_createInstance()) { }
 
 SoundProcessor::~SoundProcessor(){
 
@@ -21,7 +21,7 @@ void SoundProcessor::removeEffect(Effect* e) {
 
 void SoundProcessor::build() {
     for(auto &effect : effects) {
-        effect->applyEffect(*this->buffer);
+        effect->applyEffect(*this->buffer, soundtouchHandle);
     }
 
 }

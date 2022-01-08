@@ -25,6 +25,7 @@ public:
 private:
     std::vector<Effect*> effects = std::vector<Effect*>();
     AudioPlayBuffer<>* buffer;
+    HANDLE soundtouchHandle;
 };
 
 #endif //AUDIOFY_DEVELOP_SOUNDPROCESSOR_H
