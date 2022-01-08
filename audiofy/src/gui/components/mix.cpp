@@ -3,6 +3,7 @@
 //
 #include "mix.h"
 #include<format>
+#include "samplerate.h"
 void showMixer() {
     ImGui::SetNextWindowPos(ImVec2(904, 0));
     ImGui::SetNextWindowSize(ImVec2(363, 401));
@@ -107,7 +108,43 @@ void AudioSequencer::Get(int index, int **start, int **end, int *type, unsigned 
 }
 
 
+void bufferTrackResample(AudioTrack& track) {
+    u32 targetSampleRate = 44100;
+    auto sampleCount = track.file->audioInfo->getSampleCount();
+    u32 frameCount = sampleCount * 2;
+
+    u32 oldFrameCount = track.file->audioInfo->getLengthSeconds() * track.file->audioInfo->getSampleRate();
+    u32 newFrameCount = track.file->audioInfo->getLengthSeconds() * targetSampleRate * 2;
+
+    auto floatBuffer = static_cast<float*>(malloc(sizeof(float) * frameCount));
+    auto tempResBuffer = static_cast<float*>(malloc(newFrameCount * sizeof(float)));
+
+    src_short_to_float_array(track.buffer.getRawData().data(), floatBuffer, frameCount);
+    
+    SRC_DATA srcData = { 0 };
+
+    srcData.data_in = floatBuffer;
+    srcData.input_frames = sampleCount;
+    srcData.output_frames = newFrameCount;
+
+    srcData.data_out = tempResBuffer;
+    srcData.src_ratio = (float)targetSampleRate / (float)track.buffer.getAudioFormat().sampleRate;
+    
+    auto result = src_simple(&srcData, SRC_LINEAR, 2);
+    auto error = src_strerror(result);
+    al_ErrorCritical(error);
+    src_float_to_short_array(tempResBuffer, track.buffer.getRawData().data(), sampleCount);
+
+    AudioFormatInfo info = track.buffer.getAudioFormat();
+    info.sampleRate = targetSampleRate;
+    
+    track.buffer.setAudioFormat(info);
+    free(floatBuffer);
+    free(tempResBuffer);
+}
+
 void AudioSequencer::Add(int i) {
+    _context->_player->pause();
     auto item = &ProjectFiles::getItems()[i];
     auto track = AudioTrack(item);
     track.positionStart = 0;
@@ -115,11 +152,16 @@ void AudioSequencer::Add(int i) {
     if(track.buffer.getCurrentBufferSize() == 0) {
         try {
             _context->_decoder->decodeAudioFile(track.file->audioInfo, track.buffer);
-            _context->_player->submitDynamicBuffer(track.buffer, i);
+
         } catch(std::exception& e) {
             return;
         }
     }
+	if (track.buffer.getAudioFormat().sampleRate != 44100) {
+		bufferTrackResample(track);
+	}
+	_context->_player->playAudioBuffer(track.buffer);
+	_context->_player->play();
     track.trackCount = _tracks.size();
     _tracks.emplace_back(track);
 }
