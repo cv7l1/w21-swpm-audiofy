@@ -9,10 +9,9 @@ HRESULT onFileAccept(FileItem file) {
     return S_OK;
 }
 
-FileInfoWindow::FileInfoWindow(FileItem item) : _item(item) {
+FileInfoWindow::FileInfoWindow(AudioContext* context, FileItem item) : _context(context), _item(item) {
     try {
-        AudioDecoder decoder;
-        audioFile = decoder.loadAudioFile(item.getFullFilePath());
+        audioFile = context->_decoder->loadAudioFile(item.getFullFilePath());
     } catch(std::exception& e) {
         audioFile = std::nullopt;
     }
@@ -51,7 +50,7 @@ void ImportWindow::Show() {
         ImGui::Text("Dateityp: %ls", selectedFile.value().getFileTypeDescription());
         ImGui::Text("Größe: %fmb", selectedFile.value().getFileSize());
         if(ImGui::Button("Zu Projekt hinzufügen")) {
-            GuiMain::AddComponent(new ProjectAddWindow(selectedFile.value()));
+            GuiMain::AddComponent(new ProjectAddWindow(_context, selectedFile.value()));
             selectedFile = std::nullopt;
         }
 
@@ -86,7 +85,7 @@ void ProjectAddWindow::Show() {
         _close = true;
     }
     if(ImGui::Button("Hinzufügen")) {
-        ProjectFiles::AddFile(AudioFile(_item, std::string(buf)));
+        ProjectFiles::AddFile(AudioFile(_context->_decoder->loadAudioFile(_item.getFullFilePath()), _item,  std::string(buf)));
         _close = true;
     }
     ImGui::End();

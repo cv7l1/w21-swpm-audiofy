@@ -24,6 +24,10 @@
 #include "SoundTouchDLL.h"
 #include "gui/components/DeviceListComponent.h"
 
+#include <iostream>
+#include <cstdio>
+#include <chrono>
+#include <thread>
 // Data
 static ID3D11Device*            g_pd3dDevice = NULL;
 static ID3D11DeviceContext*     g_pd3dDeviceContext = NULL;
@@ -97,9 +101,9 @@ void setupGUI(AudioContext& context) {
     al_ErrorInfo("Setting up GUI");
     AudioDeviceManager deviceManager;
 
-    GuiMain::AddComponent(new ImportWindow);
-    GuiMain::AddComponent(new ProjectFileListComponent);
-    GuiMain::AddComponent(new Mixer);
+    GuiMain::AddComponent(new ImportWindow(&context));
+    GuiMain::AddComponent(new ProjectFileListComponent(&context));
+    GuiMain::AddComponent(new Mixer(&context));
     GuiMain::AddComponent(new DeviceListComponent(&context, &deviceManager));
 
     //Let's test the new plot
@@ -150,6 +154,9 @@ int WinMain(  _In_ HINSTANCE hInstance,
         return 1;
     }
 
+    using clock = std::chrono::steady_clock;
+
+    auto next_frame = clock::now();
 
     while (!done)
     {
@@ -163,6 +170,7 @@ int WinMain(  _In_ HINSTANCE hInstance,
         }
         if (done)
             break;
+        next_frame += std::chrono::milliseconds(33); // 5Hz
 
         // Start the Dear ImGui frame
         ImGui_ImplDX11_NewFrame();
@@ -191,6 +199,7 @@ int WinMain(  _In_ HINSTANCE hInstance,
 
         g_pSwapChain->Present(1, 0); // Present with vsync
         //g_pSwapChain->Present(0, 0); // Present without vsync
+        std::this_thread::sleep_until(next_frame);
     }
 
     // Cleanup

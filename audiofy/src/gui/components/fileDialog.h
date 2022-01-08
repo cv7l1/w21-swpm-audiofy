@@ -9,9 +9,12 @@
 #include "imgui.h"
 class FileInfoWindow : public IComponent {
 public:
-    explicit FileInfoWindow(FileItem item) ;
+    explicit FileInfoWindow(AudioContext* context, FileItem item);
+
+
     void Show() override;
 private:
+    AudioContext* _context;
     FileItem _item;
     std::optional<IAudioFile*> audioFile = std::nullopt;
     bool _open = true;
@@ -20,9 +23,10 @@ private:
 
 class ProjectAddWindow : public IComponent{
 public:
-    explicit ProjectAddWindow(FileItem item) : _item(item) {}
+    explicit ProjectAddWindow(AudioContext* context, FileItem item) : _item(item), _context(context) {}
     void Show() override;
 private:
+    AudioContext* _context;
     FileItem _item;
     bool _close = false;
 };
@@ -30,12 +34,13 @@ private:
 class ImportWindow : public IComponent {
 
 public:
-    ImportWindow() = default;
+    ImportWindow(AudioContext* context) : _context(context) {}
     void Show() override;
 
 private:
     static std::optional<FileItem> selectedFile;
     static void onImportButtonPressed();
+    AudioContext* _context;
 };
 /*
 void showExport() {

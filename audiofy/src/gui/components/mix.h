@@ -143,7 +143,7 @@ public:
 
 class Mixer : public IComponent {
 public:
-    Mixer() {
+    Mixer(AudioContext* context) : _context(context){
         AudioTrack track;
         track.positionStart = 0;
         track.positionEnd = 10;
@@ -152,13 +152,18 @@ public:
         for(auto& item: ProjectFiles::getItems()) {
             sequencer._tracks.emplace_back();
         }
+
         sequencer.frameMin = 0;
-        sequencer.frameMax = 60;
+        sequencer.frameMax = 1000;
     }
     void Show() override;
 
 private:
     AudioSequencer sequencer;
+    AudioContext* _context;
+    i32 currentPositionSec = 0;
+    double counter = 0;
+    bool isPlaying = true;
 };
 
 void showMixer();

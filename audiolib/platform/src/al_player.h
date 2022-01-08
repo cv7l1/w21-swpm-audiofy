@@ -141,7 +141,7 @@ public:
     bool    isPlaying();
     void    setErrorCallback(std::function<void()> callback) {onErrorCallback = std::move(callback);}
     void    seekToSample(const u64 sampleIndex);
-
+    AudioFormatInfo<> getAudioFormat() {return frontAudioBuffer->getAudioFormat();}
     void    play();
     void    pause();
     void    stopLoop();

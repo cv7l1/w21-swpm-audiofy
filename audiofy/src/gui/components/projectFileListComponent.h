@@ -8,14 +8,17 @@
 
 #include <vector>
 #include "IComponent.h"
+#include "../../audio/AudioWorkspace.h"
+
 class ProjectFileListComponent : public IComponent {
 
 public:
-    ProjectFileListComponent() = default;
+    ProjectFileListComponent(AudioContext* context) : _context(context) {};
     void Show() override;
 
 private:
     int selectedItem = -1;
+    AudioContext* _context;
 };
 
 

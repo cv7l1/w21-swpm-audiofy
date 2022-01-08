@@ -17,18 +17,18 @@
 
 class AudioFile {
 public:
-    AudioFile(FileItem& file, std::string name) :  _name(name), _file(file){}
+    AudioFile(IAudioFile* audioFile, FileItem& file, std::string name) :  _name(name), _file(file), audioInfo(audioFile) {}
     const std::string& getProjectName() {
         return _name;
     }
     FileItem& getFile() {
         return _file;
     }
+    IAudioFile* audioInfo = nullptr;
 
 private:
     std::string _name;
     FileItem& _file;
-    AudioPlayBuffer<i16>* pcmBuffer = nullptr;
 };
 class AudioTrack {
 public:
@@ -41,7 +41,7 @@ public:
     u32 start = 0;
     u32 end = 0;
     int trackCount = 0;
-    AudioFile*  file = nullptr;
+    AudioFile* file = nullptr;
 
 };
 class AudioContext {

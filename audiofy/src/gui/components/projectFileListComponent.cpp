@@ -38,7 +38,7 @@ void ProjectFileListComponent::Show() {
             ImGui::Text("Größe: %fmb", itemList[selectedItem].getFile().getFileSize());
 
             if(ImGui::Button("Mehr Informationen")) {
-                GuiMain::AddComponent(new FileInfoWindow(itemList[selectedItem].getFile()));
+                GuiMain::AddComponent(new FileInfoWindow(_context, itemList[selectedItem].getFile()));
             }
         }
 
