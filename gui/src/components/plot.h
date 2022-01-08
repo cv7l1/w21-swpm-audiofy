@@ -26,8 +26,8 @@ void showPlot(const float data[], int arraysize) {
 		cutData[static_cast<int>(i - start)] = data[i];
 	}
 
-	ImGui::SetNextWindowPos(ImVec2(0, 0));
-	ImGui::SetNextWindowSize(ImVec2(905, 664));
+	ImGui::SetNextWindowPos(ImVec2(0, 18));
+	ImGui::SetNextWindowSize(ImVec2(905, 646));
 	ImGui::Begin("Plot");
 	ImGui::PlotConfig conf;
 	conf.values.ys = cutData;

@@ -10,8 +10,8 @@ char* fileDetailString(audiofile f) {
 }
 
 void showMixer(audiofile* importedfiles, int length) {
-    ImGui::SetNextWindowPos(ImVec2(904, 0));
-    ImGui::SetNextWindowSize(ImVec2(363, 401));
+    ImGui::SetNextWindowPos(ImVec2(904, 18));
+    ImGui::SetNextWindowSize(ImVec2(363, 383));
     ImGui::Begin("MIX");
 
     ImGui::Text("Sequencer (Drag&Drop)");
@@ -67,16 +67,16 @@ void showMixer(audiofile* importedfiles, int length) {
 
     static audiofile current_item = {-1,"Not Selected",-1};
     ImGui::Text("\nDuplicate/Remove file:");
-    if (ImGui::BeginCombo("##combo", current_item.name)) // currentitem = preselected item
+    if (ImGui::BeginCombo("##combo", current_item.name)) // The second parameter is the label previewed before opening the combo.
     {
         for (int n = 0; n < length; n++)
         {
             if (importedfiles[n].id != 0) {
-                bool is_selected = (current_item.id == importedfiles[n].id);
+                bool is_selected = (current_item.id == importedfiles[n].id); // You can store your selection however you want, outside or inside your objects
                 if (ImGui::Selectable(importedfiles[n].name, is_selected))
-                    current_item = importedfiles[n]; // store selected item
+                    current_item = importedfiles[n];
                 if (is_selected)
-                    ImGui::SetItemDefaultFocus();   // initial focus
+                    ImGui::SetItemDefaultFocus();   // You may set the initial focus when opening the combo (scrolling + for keyboard navigation support)
             }
         }
         ImGui::EndCombo();
