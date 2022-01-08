@@ -5,10 +5,15 @@
 #include "SoundProcessor.h"
 
 SoundProcessor::SoundProcessor(AudioPlayBuffer<>* buffer)
-: buffer(buffer) , soundtouchHandle(soundtouch_createInstance()) { }
+: buffer(buffer) , soundtouchHandle(soundtouch_createInstance()) { 
+    soundtouch_setChannels(soundtouchHandle,2);
+    soundtouch_setSampleRate(soundtouchHandle, buffer->getAudioFormat().sampleRate);
+    soundtouch_putSamples_i16(soundtouchHandle,buffer->getRawData().data(),buffer->getAudioFormat().sampleRate);
+}
 
 SoundProcessor::~SoundProcessor(){
-
+    soundtouch_clear(soundtouchHandle);
+    soundtouch_destroyInstance(soundtouchHandle);
 }
 
 void SoundProcessor::addEffect(Effect* e) {
