@@ -57,6 +57,12 @@ bool AudioPlayer::isPlaying() {
     return (currentState.BuffersQueued > 0);
 }
 
+bool AudioPlayer::dynamicIsPlaying(int index) {
+    XAUDIO2_VOICE_STATE currentState;
+    voices[index]->GetState(&currentState, XAUDIO2_VOICE_NOSAMPLESPLAYED);
+    return (currentState.BuffersQueued > 0);
+}
+
 void AudioPlayer::play() {
     al_ErrorInfo("Start playing from front buffer");
     throwIfFailed(frontVoice->Start());
@@ -198,6 +204,9 @@ void AudioPlayer::seekToSample(const u64 sampleIndex) {
         play();
     }
 }
+void AudioPlayer::dynamicSeekToSample(int index, const u64 sampleIndex) {
+    //TODO: Implement
+}
 
 void AudioPlayer::OnStreamEnd() {
     for(auto& observer : _observer) {
@@ -245,3 +254,18 @@ void AudioPlayer::setDevice(AudioDevice *device) {
     submitBuffer();
     this->play();
 }
+
+void AudioPlayer::submitDynamicBuffer(AudioPlayBuffer<> &buffer, int index) {
+    IXAudio2SourceVoice* voice;
+    auto wf = buffer.getAudioFormat().toWaveFormat();
+    throwIfFailed(_context->CreateSourceVoice(&voice, &wf, 0, XAUDIO2_DEFAULT_FREQ_RATIO, this, nullptr, nullptr));
+
+    auto xBuffer = buffer.toXAudioBuffer();
+    voice->SubmitSourceBuffer(&xBuffer);
+    voices[index] = voice;
+}
+
+void AudioPlayer::playDynamicBuffer(int index) {
+    throwIfFailed(voices[index]->Start());
+}
+

@@ -101,6 +101,7 @@ struct RampEdit : public ImCurveEdit::Delegate
 
 class AudioSequencer : public ImSequencer::SequenceInterface {
 public:
+    AudioSequencer(AudioContext* context) : _context(context) {}
     int GetFrameMin() const override;
 
     int GetFrameMax() const override;
@@ -136,14 +137,17 @@ public:
     RampEdit rampEdit;
 
     std::vector<AudioTrack> _tracks = std::vector<AudioTrack>();
+
     i32 frameMin = 0;
     i32 frameMax = 0;
 
+private:
+    AudioContext* _context;
 };
 
 class Mixer : public IComponent {
 public:
-    Mixer(AudioContext* context) : _context(context){
+    Mixer(AudioContext* context) : _context(context), sequencer(context){
         AudioTrack track;
         track.positionStart = 0;
         track.positionEnd = 10;

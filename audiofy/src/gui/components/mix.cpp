@@ -30,7 +30,7 @@ void Mixer::Show() {
                                &expanded, &selectedEntry,
                                &firstFrame,
                                ImSequencer::SEQUENCER_EDIT_STARTEND | ImSequencer::SEQUENCER_ADD |
-                               ImSequencer::SEQUENCER_DEL | ImSequencer::SEQUENCER_COPYPASTE | ImSequencer::SEQUENCER_OPTIONS::SEQUENCER_CHANGE_FRAME
+                               ImSequencer::SEQUENCER_DEL | ImSequencer::SEQUENCER_COPYPASTE | (!isPlaying ? ImSequencer::SEQUENCER_OPTIONS::SEQUENCER_CHANGE_FRAME : 0)
                                );
 
         if(ImGui::Button("Play")) {
@@ -39,6 +39,17 @@ void Mixer::Show() {
             _context->_player->seekToSample(seekPos);
             counter = 0;
             _context->_player->play();
+
+            for(int i = 0; i<sequencer._tracks.size(); ++i) {
+                if(currentPositionSec >= sequencer._tracks[i].positionStart && currentPositionSec < sequencer._tracks[i].positionEnd) {
+                    try {
+                        _context->_player->playDynamicBuffer(i);
+
+                    } catch(std::exception &e) {
+
+                    }
+                }
+            }
         }
         if(ImGui::Button("Pause")) {
             isPlaying = false;
@@ -101,7 +112,14 @@ void AudioSequencer::Add(int i) {
     auto track = AudioTrack(item);
     track.positionStart = 0;
     track.positionEnd = (int)item->audioInfo->getLengthSeconds();
-
+    if(track.buffer.getCurrentBufferSize() == 0) {
+        try {
+            _context->_decoder->decodeAudioFile(track.file->audioInfo, track.buffer);
+            _context->_player->submitDynamicBuffer(track.buffer, i);
+        } catch(std::exception& e) {
+            return;
+        }
+    }
     track.trackCount = _tracks.size();
     _tracks.emplace_back(track);
 }

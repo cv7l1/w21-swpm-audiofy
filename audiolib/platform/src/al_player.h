@@ -5,6 +5,7 @@
 #ifndef AUDIOFY_LIB_AL_PLAYER_H
 #define AUDIOFY_LIB_AL_PLAYER_H
 
+#include <map>
 #include "al_error.h"
 #include "al_device.h"
 
@@ -135,12 +136,19 @@ public:
 
     void    attach(_In_ IAudioPlayerObserver* observer);
     void    detach(_In_ IAudioPlayerObserver* observer);
-
+    void    submitDynamicBuffer(AudioPlayBuffer<>& buffer, int index);
+    void    playDynamicBuffer(int index);
+    void    stopDynamicBuffer(int index) {voices[index]->Stop();}
+    void    removeDynamicBuffer(int index) {voices.erase(index);};
+    void    setDynamicBufferVolume(int index, float volume) {voices[index]->SetVolume(volume);};
     void    setMasterVolume(float volume);
     float   getCurrentVolume();
     bool    isPlaying();
+    bool    dynamicIsPlaying(int index);
     void    setErrorCallback(std::function<void()> callback) {onErrorCallback = std::move(callback);}
     void    seekToSample(const u64 sampleIndex);
+    void    dynamicSeekToSample(int index, u64 sampleIndex);
+
     AudioFormatInfo<> getAudioFormat() {return frontAudioBuffer->getAudioFormat();}
     void    play();
     void    pause();
@@ -167,6 +175,7 @@ public:
 private:
 
 private:
+    bool useDynamicMixing = false;
 
     HANDLE bufferEndEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
     void initEngine();
@@ -183,6 +192,8 @@ private:
     IXAudio2SourceVoice* frontVoice = nullptr;
 
     std::unique_ptr<AudioPlayBuffer<>> frontAudioBuffer = std::make_unique<AudioPlayBuffer<>>();
+
+    std::map<int, IXAudio2SourceVoice*> voices = std::map<int, IXAudio2SourceVoice*>();
 
     AudioDevice* _currentDevice = nullptr;
     AudioFormatInfo<> currentAudioFormat;

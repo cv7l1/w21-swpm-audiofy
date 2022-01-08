@@ -42,7 +42,7 @@ public:
     u32 end = 0;
     int trackCount = 0;
     AudioFile* file = nullptr;
-
+    AudioPlayBuffer<> buffer;
 };
 class AudioContext {
 public:
