@@ -1,4 +1,5 @@
 void showToolBar(ImVec4* colors) {
+    static bool showAbout = false;
     if (ImGui::BeginMainMenuBar())
     {
         if (ImGui::BeginMenu("Files"))
@@ -60,6 +61,26 @@ void showToolBar(ImVec4* colors) {
             ImGui::EndMenu();
         }
 
+        if (ImGui::BeginMenu("other"))
+        {
+            if (ImGui::MenuItem("ABOUT US")) {
+                showAbout = true;
+            }
+
+            ImGui::EndMenu();
+        }
         ImGui::EndMainMenuBar();
+            
+        if (showAbout) {
+            ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+            ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+            ImGui::SetNextWindowSize(ImVec2(300, 300));
+            ImGui::Begin("About us");
+            ImGui::Text("\n\n\n\n\n\t\t    --Presented by-- \n\t\t\tJonathan Hauter\n\t\t\t Vivien Traue\n\t\t    Dennis Gorpinic\n\t\t   Clemens Vogtländer\n\t\t\t Marc Leenders\n\t\t\tMario Blomenkamp\n\t\t\t Mathis Grabert\n\n\n\n\n\n");
+            if (ImGui::Button("CLOSE")) {
+                showAbout = false;
+            }
+            ImGui::End();
+        }
     }
 }
