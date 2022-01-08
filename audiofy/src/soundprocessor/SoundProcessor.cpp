@@ -5,7 +5,7 @@
 #include "SoundProcessor.h"
 
 SoundProcessor::SoundProcessor(AudioPlayBuffer<>* buffer)
-: buffer(buffer) { }
+: buffer(buffer) , h(soundtouch_createInstance()) { }
 
 SoundProcessor::~SoundProcessor(){
 
