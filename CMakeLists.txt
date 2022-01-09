@@ -20,7 +20,7 @@ target_include_directories(imgui_win32_dx11_lib PUBLIC include/imgui)
 
 #add_executable(audiofy src/Application.cpp src/win32/ay_fileManager.cpp src/audio/AudioWorkspace.cpp src/audio/AudioWorkspace.h
 #        src/gui/components/controlElements.h src/gui/components/cut.h src/gui/components/equalizer.h src/gui/components/fileDialog.h src/gui/components/leveling.h src/gui/components/mix.h src/gui/components/plot.h src/gui/components/projectFileListComponent.cpp src/gui/components/projectFileListComponent.h src/gui/GuiMain.cpp src/gui/GuiMain.h src/gui/components/IComponent.cpp src/gui/components/IComponent.h src/Application.h src/gui/components/fileDialog.cpp src/gui/components/plot.cpp src/gui/components/mix.cpp src/soundprocessor/SoundProcessor.cpp src/gui/components/DeviceListComponent.cpp src/gui/components/DeviceListComponent.h)
-add_executable(audiofy ${audiofy_SRC} "audiofy/src/gui/components/controlElements.cpp" "audiofy/src/gui/components/toolbar.h" "audiofy/src/gui/components/toolbar.cpp")
+add_executable(audiofy ${audiofy_SRC} "audiofy/src/gui/components/controlElements.cpp" "audiofy/src/gui/components/toolbar.h" "audiofy/src/gui/components/toolbar.cpp" "audiofy/src/gui/components/EffectWindow.h" "audiofy/src/gui/components/EffectWindow.cpp")
 
 #target_include_directories(audiofy PUBLIC include)
 target_include_directories(audiofy PUBLIC audiolib/platform/src)

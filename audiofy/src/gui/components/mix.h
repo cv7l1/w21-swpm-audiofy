@@ -143,7 +143,7 @@ public:
 
     i32 frameMin = 0;
     i32 frameMax = 0;
-
+    bool showEffectWindow = false;
 private:
     AudioContext* _context;
     ay_AudioMixer* _mixer;

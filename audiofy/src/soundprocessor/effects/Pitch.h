@@ -13,8 +13,12 @@ public:
     ~Pitch() {
     }
 
-    void applyEffect(AudioPlayBuffer<>& buffer, HANDLE h) override {
+    void applyEffect(AudioPlayBuffer<>* buffer, HANDLE h) override {
         soundtouch_setPitchSemiTones(h,pitch);
+        //buffer->getRawData().resize(samplesRecieved);
+    }
+    const char* getEffectName() override {
+        return "Pitch";
     }
 
 private:

@@ -5,6 +5,8 @@
 #include<format>
 #include "samplerate.h"
 #include "../GuiMain.h"
+#include "EffectWindow.h"
+
 #include "controlElements.h"
 void showMixer() {
     ImGui::SetNextWindowPos(ImVec2(904, 0));
@@ -56,6 +58,7 @@ void MixerComponent::Show() {
                                ImSequencer::SEQUENCER_EDIT_STARTEND | ImSequencer::SEQUENCER_ADD |
                                ImSequencer::SEQUENCER_DEL | ImSequencer::SEQUENCER_COPYPASTE | (!isPlaying ? ImSequencer::SEQUENCER_OPTIONS::SEQUENCER_CHANGE_FRAME : 0)
                                );
+
 
         /*
         if(ImGui::Button("Play")) {
@@ -192,7 +195,7 @@ void AudioSequencer::Add(int i) {
     if(track->buffer.getCurrentBufferSize() == 0) {
         try {
             _context->_decoder->decodeAudioFile(track->file->audioInfo, track->buffer);
-
+            track->effectProcessor = new SoundProcessor(&track->buffer);
         } catch(std::exception& e) {
             return;
         }
@@ -232,11 +235,11 @@ void AudioSequencer::Paste() {
 }
 
 size_t AudioSequencer::GetCustomHeight(int i) {
-    return 30;
+    return 0;
 }
 
 void AudioSequencer::DoubleClick(int i) {
-    SequenceInterface::DoubleClick(i);
+    GuiMain::AddComponent(new EffectWindow(_tracks[i]));
 }
 
 void AudioSequencer::CustomDraw(int index, ImDrawList* draw_list, const ImRect& rc, const ImRect& legendRect, const ImRect& clippingRect, const ImRect& legendClippingRect) {
@@ -257,7 +260,7 @@ void AudioSequencer::CustomDraw(int index, ImDrawList* draw_list, const ImRect& 
     draw_list->PopClipRect();
 
     ImGui::SetCursorScreenPos(rc.Min);
-     */
+    */
 }
 
 void AudioSequencer::CustomDrawCompact(int index, ImDrawList* draw_list, const ImRect& rc, const ImRect& clippingRect) {

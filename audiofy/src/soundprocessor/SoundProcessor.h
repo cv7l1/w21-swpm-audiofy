@@ -19,8 +19,12 @@ public:
     void removeEffect(Effect* e);
 
     void build();
+    
+    void process();
 
-    AudioPlayBuffer<> getBuffer();
+    HANDLE getHandle() { return soundtouchHandle; }
+
+    AudioPlayBuffer<>* getBuffer();
 
 private:
     std::vector<Effect*> effects = std::vector<Effect*>();

@@ -8,7 +8,6 @@ SoundProcessor::SoundProcessor(AudioPlayBuffer<>* buffer)
 : buffer(buffer) , soundtouchHandle(soundtouch_createInstance()) { 
     soundtouch_setChannels(soundtouchHandle,2);
     soundtouch_setSampleRate(soundtouchHandle, buffer->getAudioFormat().sampleRate);
-    soundtouch_putSamples_i16(soundtouchHandle,buffer->getRawData().data(),buffer->getRawData().size());
 }
 
 SoundProcessor::~SoundProcessor(){
@@ -26,12 +25,11 @@ void SoundProcessor::removeEffect(Effect* e) {
 
 void SoundProcessor::build() {
     for(auto &effect : effects) {
-        effect->applyEffect(*this->buffer, soundtouchHandle);
+        effect->applyEffect(this->buffer, soundtouchHandle);
     }
-
 }
 
-AudioPlayBuffer<> SoundProcessor::getBuffer() {
-    return *this->buffer;
+AudioPlayBuffer<>* SoundProcessor::getBuffer() {
+    return this->buffer;
 }
 

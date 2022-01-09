@@ -10,7 +10,8 @@
 
 class Effect {
 public:
-    virtual void applyEffect(AudioPlayBuffer<>& buffer,HANDLE h) = 0;
+    virtual void applyEffect(AudioPlayBuffer<>* buffer,HANDLE h) = 0;
+    virtual const char* getEffectName() = 0;
 };
 
 #endif //AUDIOFY_EFFECT_H

@@ -12,12 +12,15 @@ public:
     ~Volume() {
     }
 
-    void applyEffect(AudioPlayBuffer<>& buffer,HANDLE h) override {
-        for (auto& sample : buffer.getRawData()) {
+    void applyEffect(AudioPlayBuffer<>* buffer,HANDLE h) override {
+        for (auto sample : buffer->getRawData()) {
             sample += volume;
         }     
     }
 
+    const char* getEffectName() override {
+        return "Volume";
+    }
 private:
     int volume;
 };

@@ -1,5 +1,4 @@
-#ifndef AUDIOFY_PITCHEFFECT_H
-#define AUDIOFY_PITCHEFFECT_H
+#pragma once
 
 #include "Effect.h"
 #include "SoundTouchDLL.h"
@@ -13,8 +12,11 @@ public:
     ~Tempo() {
     }
 
-    void applyEffect(AudioPlayBuffer<>& buffer, HANDLE h) override {
+    void applyEffect(AudioPlayBuffer<>* buffer, HANDLE h) override {
         soundtouch_setTempo(h, tempo);
+    }
+    const char* getEffectName() override {
+        return "Tempo";
     }
 
 private:
@@ -22,6 +24,3 @@ private:
 
 };
 
-#endif 
-
-#pragma once

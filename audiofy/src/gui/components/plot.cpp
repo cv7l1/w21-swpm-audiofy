@@ -84,8 +84,8 @@ void WaveformPlot::Show() {
                 ImPlot::PlotLine<float>(name.c_str(), xData, data, max);
                 dataIndex++;
             }
-            ImPlot::EndPlot();
         }
+        ImPlot::EndPlot();
         ImGui::End();
     }
 }

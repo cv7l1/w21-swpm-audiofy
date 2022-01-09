@@ -8,11 +8,19 @@
 #include "Effect.h"
 
 class Overmodulation : public Effect {
-    void applyEffect(AudioPlayBuffer<>& buffer,HANDLE h) override {
-        for (auto& sample : buffer.getRawData()) {
+public:
+    Overmodulation(int vol) : vol(vol) {};
+
+    void applyEffect(AudioPlayBuffer<>* buffer,HANDLE h) override {
+        for (auto sample : buffer->getRawData()) {
             sample *= 10;
         }
     }
+    const char* getEffectName() override {
+        return "Overmodulation";
+    }
+private:
+    int vol;
 };
 
 #endif //AUDIOFY_OVERMODULATIONEFFECT_H

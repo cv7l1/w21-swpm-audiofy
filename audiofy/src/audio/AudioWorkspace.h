@@ -12,6 +12,7 @@
 #include "../win32/ay_fileManager.h"
 #include<optional>
 #include<string>
+#include "../soundprocessor/SoundProcessor.h"
 
 class AudioFile {
 public:
@@ -29,6 +30,7 @@ class AudioTrack {
 public:
     AudioTrack();
     AudioTrack(AudioFile* file);
+    
     AudioPlayBuffer<>& getBuffer() { return buffer; }
     int positionStart = 0;
     int positionEnd= 0;
@@ -36,8 +38,11 @@ public:
     u32 start = 0;
     u32 end = 0;
     int trackCount = 0;
+    u32 mixVol = 1;
+
     AudioFile* file = nullptr;
     AudioPlayBuffer<> buffer;
+    SoundProcessor* effectProcessor;
 };
 
 
