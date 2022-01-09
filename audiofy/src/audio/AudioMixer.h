@@ -14,8 +14,9 @@ public:
     void flush();
 
     void submitBuffer(_In_ AudioTrack* track);
+
     void remove(_In_ AudioTrack* track) { 
-        submittedBuffers.remove(track); 
+        //submittedBuffers.remove(track); 
     }
     void mixTrack(_In_ AudioTrack* track);
     
@@ -27,9 +28,9 @@ public:
 private:
     void mix();
 
-    std::list<AudioTrack*> submittedBuffers;
+    std::vector<AudioTrack*> submittedBuffers;
     AudioPlayBuffer<> outputBuffer;
-    i32 currentBufferPosition = -1;
+    i32 currentBufferPosition = 0;
     u32 _initialOutputBufferSize;
 };
 

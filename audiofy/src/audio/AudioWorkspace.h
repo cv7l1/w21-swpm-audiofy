@@ -38,11 +38,23 @@ public:
     u32 start = 0;
     u32 end = 0;
     int trackCount = 0;
-    u32 mixVol = 1;
+    float mixVol = 1;
 
     AudioFile* file = nullptr;
     AudioPlayBuffer<> buffer;
     SoundProcessor* effectProcessor;
 };
 
+class ProjectFileManager {
+public:
+	void AddFile(AudioFile* file) {
+		audioFiles.push_back(file);
+	 }
+    const std::vector<AudioFile*>& getItems() {
+        return audioFiles;
+     }
+              
+private:
+    std::vector<AudioFile*> audioFiles;
+};
 

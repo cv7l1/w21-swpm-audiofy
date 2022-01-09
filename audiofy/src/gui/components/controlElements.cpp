@@ -6,20 +6,20 @@ void ControlElements::Show()
 	if (ImGui::Begin("Control Elements")) {
 
 		if (ImGui::Button("Play")) {
-			_mixer->SetPosition(_mixer->currentPositionSec);
+			_mixer->SetPosition(_context->currentPositionSec);
 			_context->_player->play();
-			_mixer->isPlaying = true;
+			_context->isPlaying = true;
 		} 
 		ImGui::SameLine();
 		if (ImGui::Button("Pause")) {
 			_context->_player->pause();
-			_mixer->isPlaying = false;
+			_context->isPlaying = false;
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Stop")) {
 			_mixer->SetPosition(0);
 			_context->_player->pause();
-			_mixer->isPlaying = false;
+			_context->isPlaying = false;
 		}
 		ImGui::End();
 	}

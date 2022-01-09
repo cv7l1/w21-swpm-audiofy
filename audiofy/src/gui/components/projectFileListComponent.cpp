@@ -13,12 +13,12 @@
 
 void ProjectFileListComponent::Show() {
     if(ImGui::Begin("Projekt"), &visible, ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysAutoResize) {
-        std::vector<AudioFile>& itemList = ProjectFiles::getItems();
+        auto& itemList = _context->manager->getItems();
         if(ImGui::BeginListBox("")) {
             int index = 0;
 
             for(auto item : itemList) {
-                if(ImGui::Selectable(item.getProjectName().c_str())) {
+                if(ImGui::Selectable(item->getProjectName().c_str())) {
                     selectedItem = index;
                 }
                 if(ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoDisableHover)) {
@@ -33,12 +33,12 @@ void ProjectFileListComponent::Show() {
         }
 
         if(selectedItem != -1) {
-            ImGui::Text("Dateiname: %ls",itemList[selectedItem].getFile().getDisplayName());
-            ImGui::Text("Dateityp: %ls", itemList[selectedItem].getFile().getFileTypeDescription());
-            ImGui::Text("Größe: %fmb", itemList[selectedItem].getFile().getFileSize());
+            ImGui::Text("Dateiname: %ls",itemList[selectedItem]->getFile().getDisplayName());
+            ImGui::Text("Dateityp: %ls", itemList[selectedItem]->getFile().getFileTypeDescription());
+            ImGui::Text("Größe: %fmb", itemList[selectedItem]->getFile().getFileSize());
 
             if(ImGui::Button("Mehr Informationen")) {
-                GuiMain::AddComponent(new FileInfoWindow(_context, itemList[selectedItem].getFile()));
+                GuiMain::AddComponent(new FileInfoWindow(_context, itemList[selectedItem]->getFile()));
             }
         }
         ImGui::End();

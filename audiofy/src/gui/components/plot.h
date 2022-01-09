@@ -2,34 +2,31 @@
 #include <array>
 #include <imgui_plot.h>
 #include "IComponent.h"
+#include "../../audio/AudioContext.h"
 
 class WaveformPlot: public IComponent{
 public:
-    explicit WaveformPlot(AudioPlayBuffer<i16>& buffer) {
+    WaveformPlot(AudioContext* context) : _context(context) {
 
-        max = 10000;
-        _buffer.push_back(buffer);
         xData = static_cast<float *>(malloc(max * sizeof(float)));
+
         for(int i = 0; i<max; ++i) {
             xData[i] = i;
         }
-
-        yData.push_back(static_cast<float *>(malloc(max * sizeof(float))));
-    }
-    void AddBuffer(AudioPlayBuffer<i16>& buffer) {
-        _buffer.push_back(buffer);
-        yData.push_back(static_cast<float *>(malloc(max * sizeof(float))));
+        yData = static_cast<float*>(malloc(max * sizeof(float)));
     }
 
     void Show() override;
 private:
-    float* xData;
-    std::vector<float*> yData;
-    u32 max;
+    AudioContext* _context;
+    float* xData = nullptr;
+    float* yData = nullptr;
 
+    u32 max = 1000;
     u32 start;
     u32 end;
     std::vector<AudioPlayBuffer<i16>> _buffer = std::vector<AudioPlayBuffer<i16>>();
+    bool visible = true;
 };
 
 

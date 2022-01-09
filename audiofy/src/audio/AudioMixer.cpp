@@ -25,8 +25,8 @@ void ay_AudioMixer::submitBuffer(_In_ AudioTrack* track) {
 void ay_AudioMixer::mixTrack(_In_ AudioTrack* track)
 {
 	submittedBuffers.push_back(track);
-	currentBufferPosition++;
 	mix();
+	currentBufferPosition++;
 }
 
 void ay_AudioMixer::remixAll()
@@ -44,10 +44,9 @@ AudioPlayBuffer<>& ay_AudioMixer::getOutputBuffer() { return outputBuffer; }
 
 void ay_AudioMixer::mix()
 {
-	auto pos = submittedBuffers.begin();
-	std::advance(pos, currentBufferPosition);
 
-	AudioTrack* newTrack = *pos;
+	AudioTrack* newTrack = submittedBuffers[currentBufferPosition];
+
 	newTrack->effectProcessor->build();
 
 	u64 sampleRate = 44100;
@@ -64,6 +63,7 @@ void ay_AudioMixer::mix()
 
 	i16* currentPositionDest = currentPositionSource;
 	u32 samplesProcessed = 0;
+
 	//Processing	
 	while(samplesLeft > 0) {
 		soundtouch_putSamples_i16(h, currentPositionSource, procSize / 2);
@@ -78,10 +78,15 @@ void ay_AudioMixer::mix()
 	
 	soundtouch_flush(h);
 	soundtouch_clear(h);
+
 	//Mixing
 	int sepCounter = 0;
 	int startPosition = newTrack->positionStart * sampleRate * 2;
 	int endPosition = newTrack->positionEnd * sampleRate * 2;
+
+	if (newTrackBuffer.getCurrentBufferSize() <= endPosition - startPosition) {
+		newTrackBuffer.getRawData().resize(endPosition - startPosition);
+	}
 
 	if (endPosition > outputBuffer.getCurrentBufferSize()) {
 		outputBuffer.getRawData().resize(endPosition, 0);
@@ -94,7 +99,7 @@ void ay_AudioMixer::mix()
 		int a = newTrackBuffer.getRawData()[sepCounter]; 
 		int b = outputBuffer.getRawData()[currentPosition]; 
 
-		outputBuffer.getRawData()[currentPosition] = (a*newTrack->mixVol+b)/2;
+		outputBuffer.getRawData()[currentPosition] = ((a*newTrack->mixVol)+b)*0.5;
 		sepCounter++;
 
 	}

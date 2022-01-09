@@ -23,6 +23,7 @@ public:
     }
 private:
     int volume;
+    
 };
 
 #endif 

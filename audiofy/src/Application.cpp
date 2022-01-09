@@ -42,7 +42,6 @@ void CreateRenderTarget();
 void CleanupRenderTarget();
 
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-std::vector<AudioFile> ProjectFiles::files = std::vector<AudioFile>();
 //DEBUG!
 int setup(GUIWin32Context* context) {
     CoInitializeEx(nullptr, COINIT_MULTITHREADED);
@@ -105,21 +104,9 @@ void setupGUI(AudioContext& context) {
     GuiMain::AddComponent(new Toolbar(&context, deviceManager));
     GuiMain::AddComponent(new MixerComponent(&context));
 
-    //Let's test the new plot
-    AudioPlayBuffer buffer;
-    AudioPlayBuffer buffer2;
-
-    auto audioFile = context._decoder->loadAudioFile(L"allTheTime.mp3");
-    auto audioFile2 = context._decoder->loadAudioFile(L"duvet.ogg");
-
-    context._decoder->decodeAudioFile(audioFile, buffer);
     //Application::decoder.decodeAudioFile(audioFile2, buffer2);
 
-    auto plot = new WaveformPlot(buffer);
-    plot->AddBuffer(buffer);
-
-    context._player->playAudioBuffer(buffer);
-    context._player->playAudioBuffer(buffer);
+    auto plot = new WaveformPlot(&context);
 
     GuiMain::AddComponent(plot);
     al_ErrorInfo("Setting up GUI done");

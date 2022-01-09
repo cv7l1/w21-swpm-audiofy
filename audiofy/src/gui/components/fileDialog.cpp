@@ -69,8 +69,7 @@ void ImportWindow::onImportButtonPressed() {
 
 void ProjectAddWindow::Show() {
     char buf[MAX_PATH];
-    _bstr_t name(_item.getDisplayName());
-    sprintf(buf, "%s", name.operator const char *());
+    sprintf(buf, "%ws", _item.getDisplayName());
 
     if(_close) {
         return;
@@ -84,7 +83,9 @@ void ProjectAddWindow::Show() {
         _close = true;
     }
     if(ImGui::Button("Hinzufügen")) {
-        ProjectFiles::AddFile(AudioFile(_context->_decoder->loadAudioFile(_item.getFullFilePath()), _item,  std::string(buf)));
+        std::wstring wide = std::wstring(_item.getDisplayName());
+
+        _context->manager->AddFile(new AudioFile(_context->_decoder->loadAudioFile(_item.getFullFilePath()), _item,  std::string(wide.begin(), wide.end())));
         _close = true;
     }
     ImGui::End();

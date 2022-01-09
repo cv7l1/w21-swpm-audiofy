@@ -23,18 +23,12 @@ MixerComponent::MixerComponent(AudioContext* context) : _context(context), seque
 
 
     sequencer._tracks.emplace_back(track);
-    for (auto& item : ProjectFiles::getItems()) {
+    for (auto& item : _context->manager->getItems()) {
         sequencer._tracks.emplace_back();
     }
      
     sequencer.frameMin = 0;
     sequencer.frameMax = 1000;
-    _context->addMetronomeListener([this](u64 ticks) {
-        if (this->isPlaying) {
-            al_ErrorInfo("Moin");
-            this->currentPositionSec++;
-        }
-        });
     GuiMain::AddComponent(new ControlElements(_context, this));
 }
 void MixerComponent::Show() {
@@ -52,11 +46,11 @@ void MixerComponent::Show() {
             }
         }
 
-        Sequencer(&sequencer, &currentPositionSec,
+        Sequencer(&sequencer, &_context->currentPositionSec,
                                &expanded, &selectedEntry,
                                &firstFrame,
                                ImSequencer::SEQUENCER_EDIT_STARTEND | ImSequencer::SEQUENCER_ADD |
-                               ImSequencer::SEQUENCER_DEL | ImSequencer::SEQUENCER_COPYPASTE | (!isPlaying ? ImSequencer::SEQUENCER_OPTIONS::SEQUENCER_CHANGE_FRAME : 0)
+                               ImSequencer::SEQUENCER_DEL | ImSequencer::SEQUENCER_COPYPASTE | (!_context->isPlaying ? ImSequencer::SEQUENCER_OPTIONS::SEQUENCER_CHANGE_FRAME : 0)
                                );
 
 
@@ -77,7 +71,7 @@ void MixerComponent::Show() {
 
 void MixerComponent::SetPosition(u32 positionSec) {
     auto seekPos = positionSec * _context->_player->getAudioFormat().sampleRate;
-    currentPositionSec = positionSec;
+    _context->currentPositionSec = positionSec;
     _context->_player->seekToSample(seekPos);
     counter = 0;
 }
@@ -97,17 +91,22 @@ int AudioSequencer::GetItemCount() const {
 
 
 int AudioSequencer::GetItemTypeCount() const {
-    return ProjectFiles::getItems().size();
+    return _context->manager->getItems().size();
 }
 
 const char *AudioSequencer::GetItemTypeName(int i) const {
-    return ProjectFiles::getItems()[i].getProjectName().c_str();
+    auto item = _context->manager->getItems()[i];
+    if (item->getProjectName().empty()) { return "No name"; }
+
+    auto name = _context->manager->getItems()[i]->getProjectName().c_str();
+    return name;
 }
 
 const char *AudioSequencer::GetItemLabel(int i) const {
     if(_tracks[i]->file == nullptr) {
         return "NULL";
     }
+    if (_tracks[i]->file->getProjectName().empty()) { return "No name"; }
     return _tracks[i]->file->getProjectName().c_str();
 }
 
@@ -185,7 +184,7 @@ void bufferTrackResample(AudioTrack* track) {
 
 void AudioSequencer::Add(int i) {
     _context->_player->pause();
-    auto item = &ProjectFiles::getItems()[i];
+    auto item = _context->manager->getItems()[i];
 
     auto track = new AudioTrack(item);
 

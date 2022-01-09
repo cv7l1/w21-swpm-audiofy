@@ -8,4 +8,5 @@ AudioContext::AudioContext() {
     }
    _decoder = new AudioDecoder();
    _mixer = new ay_AudioMixer(nullptr, 0);
+   manager = new ProjectFileManager();
 }

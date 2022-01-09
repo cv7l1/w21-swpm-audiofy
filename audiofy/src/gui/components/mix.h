@@ -156,8 +156,6 @@ public:
     void SetPosition(u32 positionSec);
     
     AudioSequencer sequencer;
-    bool isPlaying = true;
-    i32 currentPositionSec = 0;
 
 private:
     void onMetTicks(u64 ticks);
