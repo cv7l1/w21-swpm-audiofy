@@ -15,6 +15,7 @@ class ProjectFileListComponent : public IComponent {
 public:
     ProjectFileListComponent(AudioContext* context) : _context(context) {};
     void Show() override;
+    bool visible = true;
 
 private:
     int selectedItem = -1;

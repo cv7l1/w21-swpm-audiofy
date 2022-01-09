@@ -21,6 +21,7 @@ private:
     std::vector<AudioDevice> currentDeviceList = std::vector<AudioDevice>();
     AudioDevice* currentDefaultDevice;
     int selectedDevice = -1;
+    bool visible = true;
 };
 
 

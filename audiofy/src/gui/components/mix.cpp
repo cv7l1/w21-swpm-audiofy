@@ -132,13 +132,14 @@ void bufferTrackResample(AudioTrack* track) {
 
     auto sampleCount = track->file->audioInfo->getSampleCount();
     u32 frameCount = sampleCount * 2;
-    u32 oldFrameCount = track->file->audioInfo->getLengthSeconds() * track->file->audioInfo->getSampleRate();
-    u32 newFrameCount = track->file->audioInfo->getLengthSeconds() * targetSampleRate * 2;
+    u32 oldFrameCount = track->file->audioInfo->getSampleCount();
+    u32 newFrameCount = track->file->audioInfo->getLengthSeconds() * targetSampleRate;
+
     auto messageString = std::format("old sample rate: {} target sample rate: {}", track->file->audioInfo->getSampleRate(), targetSampleRate);
     al_ErrorInfo(messageString.c_str());
 
-    auto floatBuffer = static_cast<float*>(malloc(sizeof(float) * frameCount));
-    auto tempResBuffer = static_cast<float*>(malloc(newFrameCount * sizeof(float)));
+    auto floatBuffer = static_cast<float*>(malloc(sizeof(float) * frameCount * 2));
+    auto tempResBuffer = static_cast<float*>(malloc(newFrameCount * sizeof(float) * 2));
 
     al_ErrorInfo("Converting target to float buffer");
     src_short_to_float_array(track->buffer.getRawData().data(), floatBuffer, frameCount);
@@ -146,7 +147,7 @@ void bufferTrackResample(AudioTrack* track) {
     SRC_DATA srcData = { 0 };
 
     srcData.data_in = floatBuffer;
-    srcData.input_frames = sampleCount;
+    srcData.input_frames = oldFrameCount;
     srcData.output_frames = newFrameCount;
 
     srcData.data_out = tempResBuffer;
@@ -162,14 +163,15 @@ void bufferTrackResample(AudioTrack* track) {
         throw std::exception();
     }
     al_ErrorInfo("Convert back to i16");
-    src_float_to_short_array(tempResBuffer, track->buffer.getRawData().data(), sampleCount);
+    track->buffer.getRawData().resize(srcData.output_frames_gen * 2);
+    src_float_to_short_array(tempResBuffer, track->buffer.getRawData().data(), srcData.output_frames_gen * 2);
+
     al_ErrorInfo("Convert done");
     AudioFormatInfo info = track->buffer.getAudioFormat();
     info.sampleRate = targetSampleRate;
        
     auto stringMessage = std::format("new buffer size: {}", srcData.output_frames_gen * 2);
 
-    track->buffer.getRawData().resize(srcData.output_frames_gen * 2);
     track->buffer.setAudioFormat(info);
 
     al_ErrorInfo("Resampling done");

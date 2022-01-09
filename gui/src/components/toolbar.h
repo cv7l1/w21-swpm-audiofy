@@ -2,7 +2,7 @@ void showToolBar(ImVec4* colors) {
     static bool showAbout = false;
     if (ImGui::BeginMainMenuBar())
     {
-        if (ImGui::BeginMenu("Files"))
+        if (ImGui::BeginMenu("File"))
         {
             if (ImGui::MenuItem("Import"))
             {
@@ -32,6 +32,7 @@ void showToolBar(ImVec4* colors) {
             ImGui::EndMenu();
         }
 
+        /*
         if (ImGui::BeginMenu("Color Schemes"))
         {
             if (ImGui::MenuItem("White"))
@@ -60,8 +61,9 @@ void showToolBar(ImVec4* colors) {
             }
             ImGui::EndMenu();
         }
+        */
 
-        if (ImGui::BeginMenu("other"))
+        if (ImGui::BeginMenu("Other"))
         {
             if (ImGui::MenuItem("ABOUT US")) {
                 showAbout = true;

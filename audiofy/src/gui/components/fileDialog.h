@@ -35,13 +35,17 @@ private:
 class ImportWindow : public IComponent {
 
 public:
-    ImportWindow(AudioContext* context) : _context(context) {}
+    ImportWindow(AudioContext* context) : _context(context) {
+        onImportButtonPressed();
+    }
+
     void Show() override;
 
 private:
     static std::optional<FileItem> selectedFile;
     static void onImportButtonPressed();
     AudioContext* _context;
+    bool visible = true;
 };
 /*
 void showExport() {

@@ -34,13 +34,11 @@ void FileInfoWindow::Show() {
     ImGui::End();
 }
 void ImportWindow::Show() {
-    static float f = 0.0f;
-    static int counter = 0;
+    if (!visible) {
+        return;
+    }
 
-    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(198, 88), ImGuiCond_FirstUseEver);
-
-    ImGui::Begin("Import", 0, 0);
+    ImGui::Begin("Import", &visible, ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysAutoResize);
     if (ImGui::Button("Öffnen")) {
         onImportButtonPressed();
     }
@@ -52,6 +50,7 @@ void ImportWindow::Show() {
         if(ImGui::Button("Zu Projekt hinzufügen")) {
             GuiMain::AddComponent(new ProjectAddWindow(_context, selectedFile.value()));
             selectedFile = std::nullopt;
+            visible = false;
         }
 
         if(ImGui::Button("Abbrechen")) {

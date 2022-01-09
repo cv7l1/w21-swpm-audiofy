@@ -23,6 +23,7 @@
 #include "gui/components/projectFileListComponent.h"
 #include "SoundTouchDLL.h"
 #include "gui/components/DeviceListComponent.h"
+#include "gui/components/toolbar.h"
 
 #include <iostream>
 #include <cstdio>
@@ -99,12 +100,10 @@ bool SanityCheck(bool debug) {
 
 void setupGUI(AudioContext& context) {
     al_ErrorInfo("Setting up GUI");
-    AudioDeviceManager deviceManager;
+    AudioDeviceManager* deviceManager = new AudioDeviceManager;
 
-    GuiMain::AddComponent(new ImportWindow(&context));
-    GuiMain::AddComponent(new ProjectFileListComponent(&context));
+    GuiMain::AddComponent(new Toolbar(&context, deviceManager));
     GuiMain::AddComponent(new MixerComponent(&context));
-    GuiMain::AddComponent(new DeviceListComponent(&context, &deviceManager));
 
     //Let's test the new plot
     AudioPlayBuffer buffer;
@@ -180,17 +179,6 @@ int WinMain(  _In_ HINSTANCE hInstance,
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
         GuiMain::Show();
-
-        float* eqData= showEqualizer();
-        float* volData = showLeveling();
-        //ImportWindow::show();
-        showMixer();
-        showCut();
-
-        const float data[] = { 1,12,11,14,18,1,7,9,11,9,1,12,11,14,18,1,7,9,11,9 };
-        int arrSize = sizeof data / sizeof data[0];
-        showPlot(data, arrSize);
-        showPlot(data, arrSize);
 
         // Rendering
         ImGui::Render();

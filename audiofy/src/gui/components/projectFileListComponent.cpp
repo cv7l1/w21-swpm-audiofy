@@ -12,7 +12,7 @@
 #include <comdef.h>
 
 void ProjectFileListComponent::Show() {
-    if(ImGui::Begin("Projekt")) {
+    if(ImGui::Begin("Projekt"), &visible, ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysAutoResize) {
         std::vector<AudioFile>& itemList = ProjectFiles::getItems();
         if(ImGui::BeginListBox("")) {
             int index = 0;
@@ -41,7 +41,6 @@ void ProjectFileListComponent::Show() {
                 GuiMain::AddComponent(new FileInfoWindow(_context, itemList[selectedItem].getFile()));
             }
         }
-
         ImGui::End();
     }
 

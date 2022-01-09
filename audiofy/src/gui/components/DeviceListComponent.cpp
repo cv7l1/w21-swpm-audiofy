@@ -11,7 +11,8 @@ DeviceListComponent::DeviceListComponent(AudioContext* context, AudioDeviceManag
     currentDefaultDevice = _deviceManager->getDefaultDevice(AudioDeviceRole::Playback);
 }
 void DeviceListComponent::Show() {
-    if(ImGui::Begin("Audio Devices")) {
+    if (!visible) { return; }
+    if(ImGui::Begin("Audio Devices"), &visible, ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysAutoResize) {
         if(currentDefaultDevice != nullptr) {
             auto name = currentDefaultDevice->getDeviceName();
             if(name.has_value()) {
