@@ -164,7 +164,7 @@ private:
     AudioContext* _context;
 
     ay_AudioMixer _mixer;
-
+    bool visible = true;
     double counter = 0;
 };
 

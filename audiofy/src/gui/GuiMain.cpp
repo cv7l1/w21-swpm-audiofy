@@ -12,7 +12,7 @@ void GuiMain::Show() {
 }
 
 void GuiMain::AddComponent(IComponent *component) {
-    visibleComponents.push_back(component);
+    visibleComponents.push_front(component);
 }
 
 void GuiMain::RemoveComponent(IComponent *component) {

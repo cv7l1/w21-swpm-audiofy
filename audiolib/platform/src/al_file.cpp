@@ -225,7 +225,7 @@ void AudioDecoder::decodeAudioFile(IAudioFile *file, AudioPlayBuffer<>& buffer) 
     }
 }
 
-void DebugWaveFileWriter::writeBufferToWaveFile(const wchar_t *destPath, AudioPlayBuffer<> &buffer) {
+void DebugWaveFileWriter::writeBufferToWaveFile(_In_z_ const wchar_t *destPath, AudioPlayBuffer<> &buffer) {
     u32 byteRate = buffer.getAudioFormat().sampleRate * buffer.getAudioFormat().numberOfChannels * 2;
     u16 blockAlign = buffer.getAudioFormat().numberOfChannels * 2;
     u16 bitsPerSample = 16;
@@ -252,4 +252,6 @@ void DebugWaveFileWriter::writeBufferToWaveFile(const wchar_t *destPath, AudioPl
     WriteFile(fileHandle, "data", 4, NULL, NULL);
     WriteFile(fileHandle, &bufferSize, 4, NULL, NULL);
     WriteFile(fileHandle, buffer.getRawData().data(), buffer.getRawData().size() * 2, NULL, NULL);
+
+    CloseHandle(fileHandle);
 }

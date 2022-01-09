@@ -21,16 +21,22 @@
 #include <al_error.h>
 #include <stdexcept>
 #include <shellapi.h>
+#include "al_debug.h"
 
+enum DialogType {
+    ayFile_Open,
+    ayFile_Save
+};
 class FileItem {
 public:
     FileItem(IShellItem* shellItem) : _shellItem(shellItem) {
         if(!shellItem) {throw std::exception("Invalid shell item");}
+
         throwIfFailed(_shellItem->GetDisplayName(SIGDN_FILESYSPATH, &_sysPath));
 
         SHGetFileInfoW(_sysPath, 0, &_shellFileInfo, sizeof(SHFILEINFOW), SHGFI_DISPLAYNAME | SHGFI_TYPENAME );
         if(0 == GetFileAttributesExW(getFullFilePath(), GetFileExInfoStandard, &_fileAttributes)) {
-            throw std::exception("Unable to retrieve file info");
+            al_ErrorWarn("Unable to get FileAttributes, possibly invalid or new file");
         }
     };
 
@@ -59,11 +65,11 @@ private:
 
 };
 
-class OpenFileItemDialog : public IFileDialogEvents {
+class Win32FileItemDialog : public IFileDialogEvents {
 public:
     IFACEMETHODIMP QueryInterface(REFIID riid, void** ppv) {
         static const QITAB qit[] = {
-                QITABENT(OpenFileItemDialog, IFileDialogEvents ),
+                QITABENT(Win32FileItemDialog, IFileDialogEvents ),
                 {0},
 
         };
@@ -86,18 +92,19 @@ public:
     IFACEMETHODIMP OnTypeChange(IFileDialog *pfd) {return S_OK;}
     IFACEMETHODIMP OnOverwrite(IFileDialog *, IShellItem *, FDE_OVERWRITE_RESPONSE *) { return S_OK; };
 
-    explicit OpenFileItemDialog(std::function<HRESULT (FileItem)> onAccept);
+    explicit Win32FileItemDialog(std::function<HRESULT (FileItem)> onAccept, DialogType dialogType);
 
     void setFileSelectedCallback(std::function<HRESULT(FileItem)> callback) {_callback = callback;}
     void show();
 
     std::optional<FileItem> getResult();
-    ~OpenFileItemDialog() {
+    ~Win32FileItemDialog() {
         fileDialog->Unadvise(_cookie);
         fileDialog->Release();
     }
 
 private:
+    DialogType dialogType;
     DWORD _cookie;
     long _cRef;
     IFileDialog* fileDialog;

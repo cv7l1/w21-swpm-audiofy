@@ -36,7 +36,7 @@ MixerComponent::MixerComponent(AudioContext* context) : _context(context), seque
     GuiMain::AddComponent(new ControlElements(_context, this));
 }
 void MixerComponent::Show() {
-    if(ImGui::Begin("Mixer")) {
+    if(ImGui::Begin("Mixer"), &visible, ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysAutoResize) {
         static int selectedEntry = -1;
         static int firstFrame = 0;
         static bool expanded = false;

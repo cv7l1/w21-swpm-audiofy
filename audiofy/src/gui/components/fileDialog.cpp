@@ -62,7 +62,7 @@ void ImportWindow::Show() {
 }
 
 void ImportWindow::onImportButtonPressed() {
-    OpenFileItemDialog dialog(onFileAccept);
+    Win32FileItemDialog dialog(onFileAccept, DialogType::ayFile_Open);
     dialog.show();
     ImportWindow::selectedFile = dialog.getResult();
 }
