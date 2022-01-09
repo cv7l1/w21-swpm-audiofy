@@ -103,13 +103,12 @@ void setupGUI(AudioContext& context) {
 
     GuiMain::AddComponent(new ImportWindow(&context));
     GuiMain::AddComponent(new ProjectFileListComponent(&context));
-    GuiMain::AddComponent(new Mixer(&context));
+    GuiMain::AddComponent(new MixerComponent(&context));
     GuiMain::AddComponent(new DeviceListComponent(&context, &deviceManager));
 
     //Let's test the new plot
     AudioPlayBuffer buffer;
     AudioPlayBuffer buffer2;
-
 
     auto audioFile = context._decoder->loadAudioFile(L"allTheTime.mp3");
     auto audioFile2 = context._decoder->loadAudioFile(L"duvet.ogg");
@@ -147,12 +146,10 @@ int WinMain(  _In_ HINSTANCE hInstance,
     // Main loop
     bool done = false;
 
-    try {
-        AudioContext audioContext;
-        setupGUI(audioContext);
-    } catch (std::exception& e) {
-        return 1;
-    }
+	AudioContext audioContext;
+	setupGUI(audioContext);
+    u32 timeID = 1;
+    SetTimer(context.hwnd, timeID, 1000, nullptr);
 
     using clock = std::chrono::steady_clock;
 
@@ -167,6 +164,12 @@ int WinMain(  _In_ HINSTANCE hInstance,
             ::DispatchMessage(&msg);
             if (msg.message == WM_QUIT)
                 done = true;
+            if (msg.message == WM_TIMER) {
+                if (msg.wParam == timeID) {
+                    audioContext.onMetronomeTick();
+                    SetTimer(nullptr, timeID, 1000, nullptr);
+                }
+            }
         }
         if (done)
             break;
@@ -178,7 +181,6 @@ int WinMain(  _In_ HINSTANCE hInstance,
         ImGui::NewFrame();
         GuiMain::Show();
 
-        float* ctrlValues = showControl();
         float* eqData= showEqualizer();
         float* volData = showLeveling();
         //ImportWindow::show();

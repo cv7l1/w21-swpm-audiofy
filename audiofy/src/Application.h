@@ -10,6 +10,7 @@
 #include "win32/ay_fileManager.h"
 #include "audio/AudioWorkspace.h"
 #include "imgui.h"
+#include "audio/AudioContext.h"
 struct GUIWin32Context {
     HWND hwnd;
     WNDCLASSEX windowClass;

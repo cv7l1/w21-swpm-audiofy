@@ -9,6 +9,7 @@
 #include <al_device.h>
 #include "IComponent.h"
 #include "../../audio/AudioWorkspace.h"
+#include "../../audio/AudioContext.h"
 
 class DeviceListComponent : public IComponent{
 public:

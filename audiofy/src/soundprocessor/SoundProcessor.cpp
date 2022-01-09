@@ -8,7 +8,7 @@ SoundProcessor::SoundProcessor(AudioPlayBuffer<>* buffer)
 : buffer(buffer) , soundtouchHandle(soundtouch_createInstance()) { 
     soundtouch_setChannels(soundtouchHandle,2);
     soundtouch_setSampleRate(soundtouchHandle, buffer->getAudioFormat().sampleRate);
-    soundtouch_putSamples_i16(soundtouchHandle,buffer->getRawData().data(),buffer->getAudioFormat().sampleRate);
+    soundtouch_putSamples_i16(soundtouchHandle,buffer->getRawData().data(),buffer->getRawData().size());
 }
 
 SoundProcessor::~SoundProcessor(){

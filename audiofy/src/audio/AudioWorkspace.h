@@ -2,8 +2,7 @@
 // Created by Jonathan on 04.01.2022.
 //
 
-#ifndef AUDIOFY_AUDIOWORKSPACE_H
-#define AUDIOFY_AUDIOWORKSPACE_H
+#pragma once
 
 #include<list>
 #include<map>
@@ -13,28 +12,24 @@
 #include "../win32/ay_fileManager.h"
 #include<optional>
 #include<string>
-#include <al_file.h>
 
 class AudioFile {
 public:
     AudioFile(IAudioFile* audioFile, FileItem& file, std::string name) :  _name(name), _file(file), audioInfo(audioFile) {}
-    const std::string& getProjectName() {
-        return _name;
-    }
-    FileItem& getFile() {
-        return _file;
-    }
+    const std::string& getProjectName();
+    FileItem& getFile();
     IAudioFile* audioInfo = nullptr;
 
 private:
     std::string _name;
     FileItem& _file;
 };
+
 class AudioTrack {
 public:
-    AudioTrack() {};
-    AudioTrack(AudioFile* file) : file(file) {
-    }
+    AudioTrack();
+    AudioTrack(AudioFile* file);
+    AudioPlayBuffer<>& getBuffer() { return buffer; }
     int positionStart = 0;
     int positionEnd= 0;
 
@@ -44,18 +39,5 @@ public:
     AudioFile* file = nullptr;
     AudioPlayBuffer<> buffer;
 };
-class AudioContext {
-public:
-    AudioContext();
-
-    AudioPlayer* _player;
-    AudioDecoder* _decoder;
-};
-
-class AudioWorkspace {
-    std::list<AudioTrack> audioTracks = std::list<AudioTrack>();
-
-};
 
 
-#endif //AUDIOFY_AUDIOWORKSPACE_H

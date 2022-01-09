@@ -9,7 +9,7 @@
 #include <vector>
 #include "IComponent.h"
 #include "../../audio/AudioWorkspace.h"
-
+#include "../../audio/AudioContext.h"
 class ProjectFileListComponent : public IComponent {
 
 public:

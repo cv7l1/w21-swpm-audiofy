@@ -3,13 +3,18 @@
 //
 
 #include "AudioWorkspace.h"
+AudioTrack::AudioTrack()
+{
+}
 
-AudioContext::AudioContext() {
-    try {
-         _player = new AudioPlayer(false, nullptr, AudioFormatInfo<>::PCMDefault());
-    } catch(std::exception& e) {
-        MessageBoxW(nullptr, L"Unable to set up", nullptr, MB_OK);
-        throw;
-    }
-   _decoder = new AudioDecoder();
+AudioTrack::AudioTrack(AudioFile* file) : file(file) {
+}
+
+
+const std::string& AudioFile::getProjectName() {
+    return _name;
+}
+
+FileItem& AudioFile::getFile() {
+    return _file;
 }

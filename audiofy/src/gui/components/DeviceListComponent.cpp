@@ -5,6 +5,7 @@
 #include <comutil.h>
 #include "DeviceListComponent.h"
 #include "imgui.h"
+#include "../../audio/AudioContext.h"
 DeviceListComponent::DeviceListComponent(AudioContext* context, AudioDeviceManager *deviceManager) : _deviceManager(deviceManager), _audioContext(context){
     currentDeviceList = _deviceManager->getAudioDeviceList(AudioDeviceRole::Playback);
     currentDefaultDevice = _deviceManager->getDefaultDevice(AudioDeviceRole::Playback);

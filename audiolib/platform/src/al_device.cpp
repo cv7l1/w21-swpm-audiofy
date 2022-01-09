@@ -24,14 +24,14 @@ HRESULT AudioDeviceManager::OnDefaultDeviceChanged(EDataFlow flow, ERole role, L
 
 HRESULT AudioDeviceManager::OnDeviceAdded(LPCWSTR pwstrDeviceId) {
     for(auto &observer : _observers) {
-        observer->OnDeviceAdded(AudioDevice(pwstrDeviceId));
+        //observer->OnDeviceAdded(AudioDevice(pwstrDeviceId));
     }
     return S_OK;
 }
 
 HRESULT AudioDeviceManager::OnDeviceRemoved(LPCWSTR pwstrDeviceId) {
     for(auto &observer : _observers) {
-        observer->OnDeviceRemoved();
+        //observer->OnDeviceRemoved();
     }
     return S_OK;
 }
@@ -52,7 +52,7 @@ void AudioDeviceManager::setup() {
                                    nullptr,
                                    CLSCTX_INPROC_SERVER,
                                    IID_PPV_ARGS(_enumerator.GetAddressOf())));
-    _enumerator->RegisterEndpointNotificationCallback(this);
+   // _enumerator->RegisterEndpointNotificationCallback(this);
 }
 
 void AudioDevice::getDescriptionFromEndpoint() {

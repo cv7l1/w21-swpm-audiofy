@@ -7,6 +7,7 @@
 #include "../../Application.h"
 #include "../../../../audiolib/platform/src/al_file.h"
 #include "imgui.h"
+#include "../../src/audio/AudioContext.h"
 class FileInfoWindow : public IComponent {
 public:
     explicit FileInfoWindow(AudioContext* context, FileItem item);

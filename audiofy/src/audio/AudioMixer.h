@@ -2,47 +2,35 @@
 // Created by Jonathan on 08.01.2022.
 //
 
-#ifndef AUDIOFY_AUDIOMIXER_H
-#define AUDIOFY_AUDIOMIXER_H
+#pragma once
 
-#include "al_player.h"
 #include "AudioWorkspace.h"
-class AudioMixer {
-
+class ay_AudioMixer {
 public:
-    AudioMixer(i32 initialOutputBufferSize = 0) : _initialOutputBufferSize(initialOutputBufferSize) {}
+    ay_AudioMixer();
 
-    AudioMixer(AudioTrack* initialTrack, i32 initialOutputBufferSize = 0) : _initialOutputBufferSize(initialOutputBufferSize) {
-		outputBuffer.getRawData()
-			.resize(_initialOutputBufferSize, 0);
+    ay_AudioMixer(AudioTrack* initialTrack, i32 initialOutputBufferSize = 0);
 
+    void flush();
+
+    void submitBuffer(_In_ AudioTrack* track);
+    void remove(_In_ AudioTrack* track) { 
+        submittedBuffers.remove(track); 
     }
-
-    void flush() {
-        submittedBuffers.clear();
-        outputBuffer.getRawData().resize(_initialOutputBufferSize);
-        memset(outputBuffer.getRawData().data(), 0, _initialOutputBufferSize);
-    }
-
-    void submitBuffer(_In_ AudioTrack* track) {
-        submittedBuffers.emplace_back(track);
-    }
-     
     void mixTrack(_In_ AudioTrack* track);
     
 
     void remixAll();
 
-    AudioPlayBuffer<>* getOutputBuffer() { return &outputBuffer; }
+    AudioPlayBuffer<>& getOutputBuffer();
 
 private:
     void mix();
 
-    std::vector<AudioTrack*> submittedBuffers;
+    std::list<AudioTrack*> submittedBuffers;
     AudioPlayBuffer<> outputBuffer;
     i32 currentBufferPosition = -1;
     u32 _initialOutputBufferSize;
 };
 
 
-#endif //AUDIOFY_AUDIOMIXER_H

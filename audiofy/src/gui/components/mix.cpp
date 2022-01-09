@@ -4,6 +4,8 @@
 #include "mix.h"
 #include<format>
 #include "samplerate.h"
+#include "../GuiMain.h"
+#include "controlElements.h"
 void showMixer() {
     ImGui::SetNextWindowPos(ImVec2(904, 0));
     ImGui::SetNextWindowSize(ImVec2(363, 401));
@@ -12,21 +14,42 @@ void showMixer() {
     ImGui::End();
 
 }
+MixerComponent::MixerComponent(AudioContext* context) : _context(context), sequencer(context) {
+    AudioTrack* track = new AudioTrack;
+    track->positionStart = 0;
+    track->positionEnd = 10;
 
-void Mixer::Show() {
+
+    sequencer._tracks.emplace_back(track);
+    for (auto& item : ProjectFiles::getItems()) {
+        sequencer._tracks.emplace_back();
+    }
+     
+    sequencer.frameMin = 0;
+    sequencer.frameMax = 1000;
+    _context->addMetronomeListener([this](u64 ticks) {
+        if (this->isPlaying) {
+            al_ErrorInfo("Moin");
+            this->currentPositionSec++;
+        }
+        });
+    GuiMain::AddComponent(new ControlElements(_context, this));
+}
+void MixerComponent::Show() {
     if(ImGui::Begin("Mixer")) {
         static int selectedEntry = -1;
         static int firstFrame = 0;
         static bool expanded = false;
-        if(isPlaying) {
-            counter += 1.0 / 33.0;
-            if(counter >= 1) {
-                auto message = std::format("{}", counter);
-                al_ErrorInfo(message.c_str());
-                currentPositionSec += 1;
-                counter = 0;
+
+        if (ImGui::Button("Remix")) {
+            auto& buffer = _context->_mixer->getOutputBuffer();
+            if (buffer.getCurrentBufferSize() > 0) {
+				_context->_mixer->remixAll();
+                auto& buffer = _context->_mixer->getOutputBuffer();
+				_context->_player->playAudioBuffer(buffer, false);
             }
         }
+
         Sequencer(&sequencer, &currentPositionSec,
                                &expanded, &selectedEntry,
                                &firstFrame,
@@ -34,31 +57,26 @@ void Mixer::Show() {
                                ImSequencer::SEQUENCER_DEL | ImSequencer::SEQUENCER_COPYPASTE | (!isPlaying ? ImSequencer::SEQUENCER_OPTIONS::SEQUENCER_CHANGE_FRAME : 0)
                                );
 
+        /*
         if(ImGui::Button("Play")) {
             isPlaying = true;
             auto seekPos = currentPositionSec * _context->_player->getAudioFormat().sampleRate;
+
             _context->_player->seekToSample(seekPos);
             counter = 0;
             _context->_player->play();
 
-            for(int i = 0; i<sequencer._tracks.size(); ++i) {
-                if(currentPositionSec >= sequencer._tracks[i].positionStart && currentPositionSec < sequencer._tracks[i].positionEnd) {
-                    try {
-                        _context->_player->playDynamicBuffer(i);
-
-                    } catch(std::exception &e) {
-
-                    }
-                }
-            }
         }
-        if(ImGui::Button("Pause")) {
-            isPlaying = false;
-            _context->_player->pause();
-            counter = 0;
-        }
+        */
         ImGui::End();
     }
+}
+
+void MixerComponent::SetPosition(u32 positionSec) {
+    auto seekPos = positionSec * _context->_player->getAudioFormat().sampleRate;
+    currentPositionSec = positionSec;
+    _context->_player->seekToSample(seekPos);
+    counter = 0;
 }
 
 int AudioSequencer::GetFrameMin() const {
@@ -84,46 +102,46 @@ const char *AudioSequencer::GetItemTypeName(int i) const {
 }
 
 const char *AudioSequencer::GetItemLabel(int i) const {
-    if(_tracks[i].file == nullptr) {
+    if(_tracks[i]->file == nullptr) {
         return "NULL";
     }
-    return _tracks[i].file->getProjectName().c_str();
+    return _tracks[i]->file->getProjectName().c_str();
 }
 
 
 void AudioSequencer::Get(int index, int **start, int **end, int *type, unsigned int *color) {
-    AudioTrack& item = _tracks[index];
+    AudioTrack* item = _tracks[index];
     if(color) {
         *color = 0xFFAA8080;
     }
     if(start) {
-        *start = &item.positionStart;
+        *start = &item->positionStart;
     }
     if(end) {
-        *end = &item.positionEnd;
+        *end = &item->positionEnd;
     }
     if(type) {
-        *type = item.trackCount;
+        *type = item->trackCount;
     }
 }
 
 
-void bufferTrackResample(AudioTrack& track) {
+void bufferTrackResample(AudioTrack* track) {
     u32 targetSampleRate = 44100;
     al_ErrorInfo("Resampling");
 
-    auto sampleCount = track.file->audioInfo->getSampleCount();
+    auto sampleCount = track->file->audioInfo->getSampleCount();
     u32 frameCount = sampleCount * 2;
-    u32 oldFrameCount = track.file->audioInfo->getLengthSeconds() * track.file->audioInfo->getSampleRate();
-    u32 newFrameCount = track.file->audioInfo->getLengthSeconds() * targetSampleRate * 2;
-    auto messageString = std::format("old sample rate: {} target sample rate: {}", track.file->audioInfo->getSampleRate(), targetSampleRate);
+    u32 oldFrameCount = track->file->audioInfo->getLengthSeconds() * track->file->audioInfo->getSampleRate();
+    u32 newFrameCount = track->file->audioInfo->getLengthSeconds() * targetSampleRate * 2;
+    auto messageString = std::format("old sample rate: {} target sample rate: {}", track->file->audioInfo->getSampleRate(), targetSampleRate);
     al_ErrorInfo(messageString.c_str());
 
     auto floatBuffer = static_cast<float*>(malloc(sizeof(float) * frameCount));
     auto tempResBuffer = static_cast<float*>(malloc(newFrameCount * sizeof(float)));
 
     al_ErrorInfo("Converting target to float buffer");
-    src_short_to_float_array(track.buffer.getRawData().data(), floatBuffer, frameCount);
+    src_short_to_float_array(track->buffer.getRawData().data(), floatBuffer, frameCount);
     
     SRC_DATA srcData = { 0 };
 
@@ -132,7 +150,7 @@ void bufferTrackResample(AudioTrack& track) {
     srcData.output_frames = newFrameCount;
 
     srcData.data_out = tempResBuffer;
-    srcData.src_ratio = (float)targetSampleRate / (float)track.buffer.getAudioFormat().sampleRate;
+    srcData.src_ratio = (float)targetSampleRate / (float)track->buffer.getAudioFormat().sampleRate;
 
     al_ErrorInfo("Resample");
     auto result = src_simple(&srcData, SRC_LINEAR, 2);
@@ -144,15 +162,15 @@ void bufferTrackResample(AudioTrack& track) {
         throw std::exception();
     }
     al_ErrorInfo("Convert back to i16");
-    src_float_to_short_array(tempResBuffer, track.buffer.getRawData().data(), sampleCount);
+    src_float_to_short_array(tempResBuffer, track->buffer.getRawData().data(), sampleCount);
     al_ErrorInfo("Convert done");
-    AudioFormatInfo info = track.buffer.getAudioFormat();
+    AudioFormatInfo info = track->buffer.getAudioFormat();
     info.sampleRate = targetSampleRate;
        
     auto stringMessage = std::format("new buffer size: {}", srcData.output_frames_gen * 2);
 
-    track.buffer.getRawData().resize(srcData.output_frames_gen * 2);
-    track.buffer.setAudioFormat(info);
+    track->buffer.getRawData().resize(srcData.output_frames_gen * 2);
+    track->buffer.setAudioFormat(info);
 
     al_ErrorInfo("Resampling done");
    
@@ -163,35 +181,44 @@ void bufferTrackResample(AudioTrack& track) {
 void AudioSequencer::Add(int i) {
     _context->_player->pause();
     auto item = &ProjectFiles::getItems()[i];
-    auto track = AudioTrack(item);
-    track.positionStart = 0;
-    track.positionEnd = (int)item->audioInfo->getLengthSeconds();
 
-    if(track.buffer.getCurrentBufferSize() == 0) {
+    auto track = new AudioTrack(item);
+
+    track->positionStart = 0;
+    track->positionEnd = (int)item->audioInfo->getLengthSeconds();
+
+    if(track->buffer.getCurrentBufferSize() == 0) {
         try {
-            _context->_decoder->decodeAudioFile(track.file->audioInfo, track.buffer);
+            _context->_decoder->decodeAudioFile(track->file->audioInfo, track->buffer);
 
         } catch(std::exception& e) {
             return;
         }
     }
 
-	if (track.buffer.getAudioFormat().sampleRate != 44100) {
+	if (track->buffer.getAudioFormat().sampleRate != 44100) {
 		bufferTrackResample(track);
 	}
 
-	_context->_player->playAudioBuffer(track.buffer);
-	_context->_player->play();
-    track.trackCount = _tracks.size();
+    track->trackCount = _tracks.size();
     _tracks.emplace_back(track);
+    _context->_mixer->mixTrack(track);
+    
+    _context->_player->playAudioBuffer(_context->_mixer->getOutputBuffer());
 }
 
 void AudioSequencer::Del(int i) {
     _tracks.erase(_tracks.begin() + i);
+    _context->_mixer->remixAll();
+    _context->_player->playAudioBuffer(_context->_mixer->getOutputBuffer());
 }
 
 void AudioSequencer::Duplicate(int i) {
-    _tracks.push_back(_tracks[i]);
+    AudioTrack* track = _tracks[i];
+    _tracks.emplace_back(track);
+    _context->_mixer->mixTrack(track);
+    
+    _context->_player->playAudioBuffer(_context->_mixer->getOutputBuffer(), false);
 }
 
 void AudioSequencer::Copy() {
@@ -232,6 +259,4 @@ void AudioSequencer::CustomDraw(int index, ImDrawList* draw_list, const ImRect& 
 }
 
 void AudioSequencer::CustomDrawCompact(int index, ImDrawList* draw_list, const ImRect& rc, const ImRect& clippingRect) {
-    draw_list->PushClipRect(clippingRect.Min, clippingRect.Max, true);
-    draw_list->PopClipRect();
 }

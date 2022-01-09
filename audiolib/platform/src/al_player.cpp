@@ -12,14 +12,13 @@ template<typename T> XAUDIO2_BUFFER AudioPlayBuffer<typename T>::toXAudioBuffer(
     XAUDIO2_BUFFER buffer = {0};
     buffer.pAudioData = reinterpret_cast<const BYTE *>(bufferData.data());
     buffer.AudioBytes = bufferData.size() * sizeof(T) ;
-    if(!playFullBuffer) {
-        buffer.PlayBegin = playCursorStartIndex;
-        buffer.PlayLength = playLength;
-        if(loop) {
-            buffer.LoopBegin =  playCursorStartIndex;
-            buffer.LoopLength =  playLength;
-        }
-    }
+	buffer.PlayBegin = playCursorStartIndex;
+	buffer.PlayLength = playLength;
+
+	if(loop) {
+		buffer.LoopBegin =  playCursorStartIndex;
+		buffer.LoopLength =  playLength;
+	}
 
     buffer.Flags = XAUDIO2_END_OF_STREAM;
     buffer.LoopCount = loop ? XAUDIO2_LOOP_INFINITE : loopCount;
@@ -106,7 +105,7 @@ void AudioPlayer::submitBuffer() {
     WaitForSingleObjectEx(bufferEndEvent, 100, TRUE);
     al_ErrorInfo("Done!");
 
-    throwIfFailed(frontVoice->SetSourceSampleRate(frontAudioBuffer->getAudioFormat().sampleRate));
+    throwIfFailed(frontVoice->SetSourceSampleRate(44100));
     al_ErrorInfo("Submit buffer to front voice");
     throwIfFailed(frontVoice->SubmitSourceBuffer(&xBuffer));
     al_ErrorInfo("We're good!");

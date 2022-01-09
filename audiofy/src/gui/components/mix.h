@@ -10,6 +10,9 @@
 #include "ImSequencer.h"
 #include "../../audio/AudioWorkspace.h"
 #include "../../Application.h"
+#include "../../audio/AudioMixer.h"
+#include "../../audio/AudioContext.h"
+
 struct RampEdit : public ImCurveEdit::Delegate
         {
     RampEdit()
@@ -136,38 +139,33 @@ public:
     void CustomDrawCompact(int i, ImDrawList *list, const ImRect &rect, const ImRect &imRect) override;
     RampEdit rampEdit;
 
-    std::vector<AudioTrack> _tracks = std::vector<AudioTrack>();
+    std::vector<AudioTrack*> _tracks;
 
     i32 frameMin = 0;
     i32 frameMax = 0;
 
 private:
     AudioContext* _context;
+    ay_AudioMixer* _mixer;
 };
 
-class Mixer : public IComponent {
+class MixerComponent : public IComponent {
 public:
-    Mixer(AudioContext* context) : _context(context), sequencer(context){
-        AudioTrack track;
-        track.positionStart = 0;
-        track.positionEnd = 10;
-
-        sequencer._tracks.emplace_back(track);
-        for(auto& item: ProjectFiles::getItems()) {
-            sequencer._tracks.emplace_back();
-        }
-
-        sequencer.frameMin = 0;
-        sequencer.frameMax = 1000;
-    }
+    MixerComponent(AudioContext* context);
     void Show() override;
+    void SetPosition(u32 positionSec);
+    
+    AudioSequencer sequencer;
+    bool isPlaying = true;
+    i32 currentPositionSec = 0;
 
 private:
-    AudioSequencer sequencer;
+    void onMetTicks(u64 ticks);
     AudioContext* _context;
-    i32 currentPositionSec = 0;
+
+    ay_AudioMixer _mixer;
+
     double counter = 0;
-    bool isPlaying = true;
 };
 
 void showMixer();
