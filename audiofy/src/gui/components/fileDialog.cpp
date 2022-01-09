@@ -69,7 +69,7 @@ void ImportWindow::onImportButtonPressed() {
 }
 
 void ProjectAddWindow::Show() {
-    char buf[50];
+    char buf[MAX_PATH];
     _bstr_t name(_item.getDisplayName());
     sprintf(buf, "%s", name.operator const char *());
 
