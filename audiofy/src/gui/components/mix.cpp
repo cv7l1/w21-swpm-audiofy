@@ -27,7 +27,7 @@ MixerComponent::MixerComponent(AudioContext* context) : _context(context), seque
 void MixerComponent::Show() {
     bool ret;
     if (!visible) { return; }
-    if(ret = ImGui::Begin("Mixer", &visible, ImGuiWindowFlags_::ImGuiWindowFlags_NoCollapse)) {
+    if(ret = ImGui::Begin("Mixer", nullptr, ImGuiWindowFlags_::ImGuiWindowFlags_NoCollapse)) {
         static int selectedEntry = -1;
         static int firstFrame = 0;
         static bool expanded = false;
@@ -242,24 +242,6 @@ void AudioSequencer::DoubleClick(int i) {
 }
 
 void AudioSequencer::CustomDraw(int index, ImDrawList* draw_list, const ImRect& rc, const ImRect& legendRect, const ImRect& clippingRect, const ImRect& legendClippingRect) {
-    /*
-    static const char* labels[] = { "Translation", "Rotation" , "Scale" };
-
-    rampEdit.mMax = ImVec2(float(frameMax), 1.f);
-    rampEdit.mMin = ImVec2(float(frameMin), 0.f);
-    draw_list->PushClipRect(legendClippingRect.Min, legendClippingRect.Max, true);
-    for (int i = 0; i < 3; i++)
-    {
-        ImVec2 pta(legendRect.Min.x + 30, legendRect.Min.y + i * 14.f);
-        ImVec2 ptb(legendRect.Max.x, legendRect.Min.y + (i + 1) * 14.f);
-        draw_list->AddText(pta, rampEdit.mbVisible[i] ? 0xFFFFFFFF : 0x80FFFFFF, labels[i]);
-        if (ImRect(pta, ptb).Contains(ImGui::GetMousePos()) && ImGui::IsMouseClicked(0))
-            rampEdit.mbVisible[i] = !rampEdit.mbVisible[i];
-    }
-    draw_list->PopClipRect();
-
-    ImGui::SetCursorScreenPos(rc.Min);
-    */
 }
 
 void AudioSequencer::CustomDrawCompact(int index, ImDrawList* draw_list, const ImRect& rc, const ImRect& clippingRect) {

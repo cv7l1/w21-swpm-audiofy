@@ -29,6 +29,7 @@
 #include <cstdio>
 #include <chrono>
 #include <thread>
+
 // Data
 static ID3D11Device*            g_pd3dDevice = NULL;
 static ID3D11DeviceContext*     g_pd3dDeviceContext = NULL;
@@ -80,7 +81,7 @@ int setup(GUIWin32Context* context) {
     *context = GUIWin32Context {
         hwnd,
         wc,
-        &clear_color
+        clear_color
     };
     return 0;
 }
@@ -167,10 +168,13 @@ int WinMain(  _In_ HINSTANCE hInstance,
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
         GuiMain::Show();
-        
+        showCut(&audioContext);
+        showEqualizer();
+        showLeveling();
+
         // Rendering
         ImGui::Render();
-        const float clear_color_with_alpha[4] = { context.clear_color->x * context.clear_color->w, context.clear_color->y * context.clear_color->w, context.clear_color->z * context.clear_color->w, context.clear_color->w };
+        const float clear_color_with_alpha[4] = { context.clear_color.x * context.clear_color.w, context.clear_color.y * context.clear_color.w, context.clear_color.z * context.clear_color.w, context.clear_color.w };
         g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, NULL);
         g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, clear_color_with_alpha);
         ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());

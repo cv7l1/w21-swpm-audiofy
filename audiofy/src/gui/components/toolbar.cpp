@@ -9,6 +9,7 @@ void Toolbar::Show()
 {
     static bool showAbout = false;
     static bool showExportFinished = false;
+    ImVec4* colors = ImGui::GetStyle().Colors;
 
     if (ImGui::BeginMainMenuBar())
     {
@@ -88,6 +89,20 @@ void Toolbar::Show()
 			else if (ImGui::MenuItem("Classic"))
             {
                 ImGui::StyleColorsClassic();
+            }
+            else if (ImGui::MenuItem("Blue")) {
+                colors[ImGuiCol_WindowBg] = ImVec4(0.050f, 0.0f, 0.521f, 1.0f);
+                colors[ImGuiCol_TitleBg] = ImVec4(0.050f, 0.0f, 0.521f, 1.0f);
+                colors[ImGuiCol_MenuBarBg] = ImVec4(0.050f, 0.0f, 0.521f, 1.0f);
+                colors[ImGuiCol_PopupBg] = ImVec4(0.050f, 0.0f, 0.521f, 1.0f);
+                colors[ImGuiCol_Text] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+            }
+            else if (ImGui::MenuItem("White")) {
+                colors[ImGuiCol_WindowBg] = ImVec4(0.39f, 0.00f, 0.63f, 0.11f);
+                colors[ImGuiCol_TitleBg] = ImVec4(0.39f, 0.00f, 0.63f, 0.11f);
+                colors[ImGuiCol_MenuBarBg] = ImVec4(0.39f, 0.00f, 0.63f, 0.11f);
+                colors[ImGuiCol_PopupBg] = ImVec4(0.39f, 0.00f, 0.63f, 0.11f);
+                colors[ImGuiCol_Text] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
             }
             ImGui::EndMenu();
         }
