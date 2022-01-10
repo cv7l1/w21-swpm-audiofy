@@ -1,5 +1,6 @@
 #include "toolbar.h"
 #include "al_file.h"
+#include "plot.h"
 HRESULT onFileExport(FileItem item) {
     return S_OK;
 }
@@ -48,6 +49,9 @@ void Toolbar::Show()
         if (ImGui::BeginMenu("Tools")) {
             if (ImGui::MenuItem("Sequencer")) {
                 GuiMain::AddComponent(new MixerComponent(_context));
+            }
+            if (ImGui::MenuItem("Waveform")) {
+                GuiMain::AddComponent(new WaveformPlot(_context));
             }
             ImGui::EndMenu();
         }

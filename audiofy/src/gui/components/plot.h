@@ -21,12 +21,15 @@ private:
     AudioContext* _context;
     float* xData = nullptr;
     float* yData = nullptr;
+    std::vector<float*> additionalTracks;
+
+    u32 mixBufferCount = 0;
 
     u32 max = 1000;
     u32 start;
     u32 end;
-    std::vector<AudioPlayBuffer<i16>> _buffer = std::vector<AudioPlayBuffer<i16>>();
     bool visible = true;
+    
 };
 
 

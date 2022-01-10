@@ -24,7 +24,7 @@
 #include "SoundTouchDLL.h"
 #include "gui/components/DeviceListComponent.h"
 #include "gui/components/toolbar.h"
-
+#include "al_recoder.h"
 #include <iostream>
 #include <cstdio>
 #include <chrono>
@@ -100,7 +100,7 @@ bool SanityCheck(bool debug) {
 void setupGUI(AudioContext& context) {
     al_ErrorInfo("Setting up GUI");
     AudioDeviceManager* deviceManager = new AudioDeviceManager;
-
+       
     GuiMain::AddComponent(new Toolbar(&context, deviceManager));
     GuiMain::AddComponent(new MixerComponent(&context));
 
@@ -120,14 +120,14 @@ int WinMain(  _In_ HINSTANCE hInstance,
               _In_ int       nShowCmd)
 {
 
+      
     GUIWin32Context context;
-
+    
     auto result = setup(&context);
     if(result != 0) {
         MessageBoxW(nullptr, L"Unable to create gui", nullptr, MB_OK);
         return 1;
     }
-
     SanityCheck(true);
     // Main loop
     bool done = false;
@@ -140,7 +140,6 @@ int WinMain(  _In_ HINSTANCE hInstance,
     using clock = std::chrono::steady_clock;
 
     auto next_frame = clock::now();
-
     while (!done)
     {
         MSG msg;
@@ -166,7 +165,7 @@ int WinMain(  _In_ HINSTANCE hInstance,
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
         GuiMain::Show();
-
+        
         // Rendering
         ImGui::Render();
         const float clear_color_with_alpha[4] = { context.clear_color.x * context.clear_color.w, context.clear_color.y * context.clear_color.w, context.clear_color.z * context.clear_color.w, context.clear_color.w };

@@ -67,19 +67,20 @@ void showPlot(const float data[], int arraysize) {
 
 void WaveformPlot::Show() {
     if (!visible) { return; }
+    
     auto& mixBuffer = _context->_mixer->getOutputBuffer().getRawData();
     u32 seekPos = _context->currentPositionSec * 44100 * 2;
 
     if (mixBuffer.size() <= seekPos + max) {
         return;
     }
-
     src_short_to_float_array(mixBuffer.data() + seekPos, yData, max);
-    if(ImGui::Begin("Waveform")) {
-        ImPlot::BeginPlot("Waveform");
-		ImPlot::PlotLine<float>("Data", xData, yData, max - 1);
-		ImPlot::EndPlot();
 
+    if(ImGui::Begin("Waveform", &visible, 0)) {
+        if (ImPlot::BeginPlot("Waveform")) {
+			ImPlot::PlotLine<float>("Data", xData, yData, max - 1);
+			ImPlot::EndPlot();
+        }
     }
 	ImGui::End();
 }

@@ -45,8 +45,10 @@ AudioPlayBuffer<>& ay_AudioMixer::getOutputBuffer() { return outputBuffer; }
 void ay_AudioMixer::mix()
 {
 
-	AudioTrack* newTrack = submittedBuffers[currentBufferPosition];
-
+	AudioTrack* newTrack = *std::next(submittedBuffers.begin(), currentBufferPosition);
+	if (newTrack == nullptr) {
+		return;
+	}
 	newTrack->effectProcessor->build();
 
 	u64 sampleRate = 44100;
@@ -78,7 +80,7 @@ void ay_AudioMixer::mix()
 	
 	soundtouch_flush(h);
 	soundtouch_clear(h);
-
+	newTrack->effectProcessor->reset();
 	//Mixing
 	int sepCounter = 0;
 	int startPosition = newTrack->positionStart * sampleRate * 2;

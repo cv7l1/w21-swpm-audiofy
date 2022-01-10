@@ -25,7 +25,13 @@ public:
     HANDLE getHandle() { return soundtouchHandle; }
 
     AudioPlayBuffer<>* getBuffer();
-
+    
+    void reset() {
+        soundtouch_destroyInstance(soundtouchHandle);
+        soundtouchHandle = soundtouch_createInstance();
+		soundtouch_setChannels(soundtouchHandle,2);
+		soundtouch_setSampleRate(soundtouchHandle, buffer->getAudioFormat().sampleRate);
+    }
 private:
     std::vector<Effect*> effects = std::vector<Effect*>();
     AudioPlayBuffer<>* buffer;
