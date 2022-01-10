@@ -1,7 +1,6 @@
 //
 // Created by Clemens on 07.01.2022.
 //
-
 #ifndef AUDIOFY_OVERMODULATIONEFFECT_H
 #define AUDIOFY_OVERMODULATIONEFFECT_H
 

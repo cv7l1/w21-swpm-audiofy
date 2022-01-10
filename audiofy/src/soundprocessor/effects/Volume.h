@@ -25,5 +25,4 @@ private:
     int volume;
     
 };
-
 #endif 

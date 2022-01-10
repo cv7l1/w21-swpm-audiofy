@@ -5,7 +5,6 @@
 #include "SoundTouchDLL.h"
 
 class Pitch : public Effect {
-
 public:
     Pitch(float p) : Effect::Effect() , pitch(p) {
     }
@@ -23,8 +22,6 @@ public:
 
 private:
     float pitch;
-
 };
-
 #endif 
 

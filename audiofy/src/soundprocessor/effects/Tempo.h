@@ -1,10 +1,10 @@
-#pragma once
+#ifndef AUDIOFY_TEMPOEFFECT_H
+#define AUDIOFY_TEMPOEFFECT_H
 
 #include "Effect.h"
 #include "SoundTouchDLL.h"
 
 class Tempo : public Effect {
-
 public:
     Tempo(float t) : Effect::Effect(), tempo(t) {
     }
@@ -21,6 +21,5 @@ public:
 
 private:
     float tempo;
-
 };
-
+#endif // AUDIOFY_TEMPOEFFECT_H

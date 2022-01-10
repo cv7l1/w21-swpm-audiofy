@@ -20,7 +20,7 @@ void SoundProcessor::addEffect(Effect* e) {
 }
 
 void SoundProcessor::removeEffect(Effect* e) {
-    //effects.erase(effects.size()-1);
+    effects.pop_back();
 }
 
 void SoundProcessor::build() {
