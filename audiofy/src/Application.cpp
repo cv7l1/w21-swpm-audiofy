@@ -24,7 +24,6 @@
 #include "SoundTouchDLL.h"
 #include "gui/components/DeviceListComponent.h"
 #include "gui/components/toolbar.h"
-#include "al_recoder.h"
 #include <iostream>
 #include <cstdio>
 #include <chrono>
