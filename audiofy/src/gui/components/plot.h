@@ -25,7 +25,7 @@ private:
 
     u32 mixBufferCount = 0;
 
-    u32 max = 1000;
+    u32 max = 30000;
     u32 start;
     u32 end;
     bool visible = true;

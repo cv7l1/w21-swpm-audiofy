@@ -23,12 +23,11 @@ MixerComponent::MixerComponent(AudioContext* context) : _context(context), seque
      
     sequencer.frameMin = 0;
     sequencer.frameMax = 1000;
-    GuiMain::AddComponent(new ControlElements(_context, this));
 }
 void MixerComponent::Show() {
     bool ret;
     if (!visible) { return; }
-    if(ret = ImGui::Begin("Mixer", &visible, 0)) {
+    if(ret = ImGui::Begin("Mixer", &visible, ImGuiWindowFlags_::ImGuiWindowFlags_NoCollapse)) {
         static int selectedEntry = -1;
         static int firstFrame = 0;
         static bool expanded = false;

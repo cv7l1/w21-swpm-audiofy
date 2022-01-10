@@ -2,6 +2,9 @@
 
 void ControlElements::Show()
 {
+	auto& io = ImGui::GetIO();
+	if (!_visible) { return; }
+    ImGui::SetNextWindowSize(ImVec2(398, 98));
 	if (ImGui::Begin("Control Elements", &_visible, ImGuiWindowFlags_AlwaysAutoResize)) {
 		if (ImGui::Button("Play")) {
 			_mixer->SetPosition(_context->currentPositionSec);

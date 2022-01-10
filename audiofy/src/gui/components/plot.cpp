@@ -76,6 +76,7 @@ void WaveformPlot::Show() {
     }
     src_short_to_float_array(mixBuffer.data() + seekPos, yData, max);
 
+    ImGui::SetNextWindowSize(ImVec2(500, 400), ImGuiCond_::ImGuiCond_FirstUseEver);
     if(ImGui::Begin("Waveform", &visible, 0)) {
         if (ImPlot::BeginPlot("Waveform")) {
 			ImPlot::PlotLine<float>("Data", xData, yData, max - 1);

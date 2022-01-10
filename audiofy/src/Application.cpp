@@ -71,7 +71,8 @@ int setup(GUIWin32Context* context) {
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
-
+    ImGui::StyleColorsLight();
+    ImGui::StyleColorsClassic();
     ImGui_ImplWin32_Init(hwnd);
     ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
 
@@ -79,7 +80,7 @@ int setup(GUIWin32Context* context) {
     *context = GUIWin32Context {
         hwnd,
         wc,
-        clear_color
+        &clear_color
     };
     return 0;
 }
@@ -100,7 +101,8 @@ bool SanityCheck(bool debug) {
 void setupGUI(AudioContext& context) {
     al_ErrorInfo("Setting up GUI");
     AudioDeviceManager* deviceManager = new AudioDeviceManager;
-       
+    auto mixer = new MixerComponent(&context);
+    GuiMain::AddComponent(new ControlElements(&context, mixer));
     GuiMain::AddComponent(new Toolbar(&context, deviceManager));
     GuiMain::AddComponent(new MixerComponent(&context));
 
@@ -168,7 +170,7 @@ int WinMain(  _In_ HINSTANCE hInstance,
         
         // Rendering
         ImGui::Render();
-        const float clear_color_with_alpha[4] = { context.clear_color.x * context.clear_color.w, context.clear_color.y * context.clear_color.w, context.clear_color.z * context.clear_color.w, context.clear_color.w };
+        const float clear_color_with_alpha[4] = { context.clear_color->x * context.clear_color->w, context.clear_color->y * context.clear_color->w, context.clear_color->z * context.clear_color->w, context.clear_color->w };
         g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, NULL);
         g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, clear_color_with_alpha);
         ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());

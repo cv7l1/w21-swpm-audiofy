@@ -14,7 +14,7 @@
 struct GUIWin32Context {
     HWND hwnd;
     WNDCLASSEX windowClass;
-    ImVec4 clear_color;
+    ImVec4* clear_color;
 };
 
 int setup(GUIWin32Context* context);

@@ -31,6 +31,7 @@ public:
         soundtouchHandle = soundtouch_createInstance();
 		soundtouch_setChannels(soundtouchHandle,2);
 		soundtouch_setSampleRate(soundtouchHandle, buffer->getAudioFormat().sampleRate);
+        effects.clear();
     }
 private:
     std::vector<Effect*> effects = std::vector<Effect*>();
