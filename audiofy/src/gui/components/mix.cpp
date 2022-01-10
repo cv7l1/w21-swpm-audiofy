@@ -177,11 +177,12 @@ void bufferTrackResample(AudioTrack* track) {
 void AudioSequencer::Add(int i) {
     _context->_player->pause();
     auto item = _context->manager->getItems()[i];
+   // _tracks[i]->file->audioInfo = _context->_decoder->loadAudioFile(_tracks[i]->file->getFile().getFullFilePath());
     Add(item);
 }
 void AudioSequencer::Add(AudioFile* item) {
     auto track = new AudioTrack(item);
-
+    item->audioInfo = _context->_decoder->loadAudioFile(item->getFile().getFullFilePath());
     track->positionStart = 0;
     track->positionEnd = (int)item->audioInfo->getLengthSeconds();
     

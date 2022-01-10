@@ -9,9 +9,6 @@
 #include "win32_framework.h"
 #include "al_player.h"
 #include <map>
-
-
-
 enum AudioFileType {
     PCM,
     WMF,
@@ -33,7 +30,11 @@ class VorbisAudio {
 public:
     class VorbisAudioFile : public IAudioFile {
     public:
-        explicit VorbisAudioFile(const wchar_t* path, OggVorbis_File file, vorbis_info* info, u64 sampleCount, double seconds) :
+        explicit VorbisAudioFile(_In_z_ const wchar_t* path,
+                                 OggVorbis_File file,
+                                 _In_ vorbis_info* info,
+                                 u64 sampleCount,
+                                 double seconds) :
                 _path(path),
                 _file(file),
                 _info(info),
@@ -93,7 +94,10 @@ class WmfAudio {
 public:
     class WmfAudioFile: public IAudioFile{
     public:
-        WmfAudioFile(const wchar_t* path, IMFSourceReader* sourceReader, IMFMediaType* mediaType, WAVEFORMATEX* wf)
+        WmfAudioFile(_In_z_ const wchar_t* path,
+                     _In_ IMFSourceReader* sourceReader,
+                     _In_ IMFMediaType* mediaType,
+                     _In_ WAVEFORMATEX* wf)
                     :
                     _path(path),
                     _reader(sourceReader),
