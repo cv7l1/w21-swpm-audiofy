@@ -1,5 +1,6 @@
 #include "toolbar.h"
 #include "al_file.h"
+#include "plot.h"
 HRESULT onFileExport(FileItem item) {
     return S_OK;
 }
@@ -8,6 +9,7 @@ void Toolbar::Show()
 {
     static bool showAbout = false;
     static bool showExportFinished = false;
+    ImVec4* colors = ImGui::GetStyle().Colors;
 
     if (ImGui::BeginMainMenuBar())
     {
@@ -49,6 +51,9 @@ void Toolbar::Show()
             if (ImGui::MenuItem("Sequencer")) {
                 GuiMain::AddComponent(new MixerComponent(_context));
             }
+            if (ImGui::MenuItem("Waveform")) {
+                GuiMain::AddComponent(new WaveformPlot(_context));
+            }
             ImGui::EndMenu();
         }
 
@@ -69,36 +74,39 @@ void Toolbar::Show()
             ImGui::EndMenu();
         }
 
-        /*
+        
         if (ImGui::BeginMenu("Color Schemes"))
         {
-            if (ImGui::MenuItem("White"))
+            if (ImGui::MenuItem("Dark"))
             {
-                colors[ImGuiCol_WindowBg] = ImVec4(0.39f, 0.00f, 0.63f, 0.11f);
-                colors[ImGuiCol_TitleBg] = ImVec4(0.39f, 0.00f, 0.63f, 0.11f);
-                colors[ImGuiCol_MenuBarBg] = ImVec4(0.39f, 0.00f, 0.63f, 0.11f);
-                colors[ImGuiCol_PopupBg] = ImVec4(0.39f, 0.00f, 0.63f, 0.11f);
-                colors[ImGuiCol_Text] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
+                ImGui::StyleColorsDark();
             }
-            else if (ImGui::MenuItem("Black"))
+            else if (ImGui::MenuItem("Light"))
             {
-                colors[ImGuiCol_WindowBg] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
-                colors[ImGuiCol_TitleBg] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
-                colors[ImGuiCol_MenuBarBg] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
-                colors[ImGuiCol_PopupBg] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
-                colors[ImGuiCol_Text] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+                ImGui::StyleColorsLight();
             }
-            else if (ImGui::MenuItem("Blue"))
+
+			else if (ImGui::MenuItem("Classic"))
             {
+                ImGui::StyleColorsClassic();
+            }
+            else if (ImGui::MenuItem("Blue")) {
                 colors[ImGuiCol_WindowBg] = ImVec4(0.050f, 0.0f, 0.521f, 1.0f);
                 colors[ImGuiCol_TitleBg] = ImVec4(0.050f, 0.0f, 0.521f, 1.0f);
                 colors[ImGuiCol_MenuBarBg] = ImVec4(0.050f, 0.0f, 0.521f, 1.0f);
                 colors[ImGuiCol_PopupBg] = ImVec4(0.050f, 0.0f, 0.521f, 1.0f);
                 colors[ImGuiCol_Text] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
             }
+            else if (ImGui::MenuItem("White")) {
+                colors[ImGuiCol_WindowBg] = ImVec4(0.39f, 0.00f, 0.63f, 0.11f);
+                colors[ImGuiCol_TitleBg] = ImVec4(0.39f, 0.00f, 0.63f, 0.11f);
+                colors[ImGuiCol_MenuBarBg] = ImVec4(0.39f, 0.00f, 0.63f, 0.11f);
+                colors[ImGuiCol_PopupBg] = ImVec4(0.39f, 0.00f, 0.63f, 0.11f);
+                colors[ImGuiCol_Text] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
+            }
             ImGui::EndMenu();
         }
-        */
+        
 
         if (ImGui::BeginMenu("Other"))
         {

@@ -11,6 +11,7 @@ public:
 	void Show() override;
 
 private:
+	bool _visible = true;
 	AudioContext* _context;
 	MixerComponent* _mixer;
 };

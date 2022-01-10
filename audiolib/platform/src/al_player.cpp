@@ -107,6 +107,10 @@ void AudioPlayer::submitBuffer() {
 
     throwIfFailed(frontVoice->SetSourceSampleRate(44100));
     al_ErrorInfo("Submit buffer to front voice");
+    if (xBuffer.AudioBytes <= 0) {
+        al_ErrorWarn("Tried submitting an empty buffer, let's just not do that");
+        return;
+    }
     throwIfFailed(frontVoice->SubmitSourceBuffer(&xBuffer));
     al_ErrorInfo("We're good!");
 }

@@ -121,7 +121,7 @@ public:
     void Get(int index, int **start, int **end, int *type, unsigned int *color) override;
 
     void Add(int i) override;
-
+    void Add(AudioFile* item);
     void Del(int i) override;
 
     void Duplicate(int i) override;

@@ -30,7 +30,6 @@ class AudioTrack {
 public:
     AudioTrack();
     AudioTrack(AudioFile* file);
-    
     AudioPlayBuffer<>& getBuffer() { return buffer; }
     int positionStart = 0;
     int positionEnd= 0;

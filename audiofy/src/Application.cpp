@@ -24,11 +24,12 @@
 #include "SoundTouchDLL.h"
 #include "gui/components/DeviceListComponent.h"
 #include "gui/components/toolbar.h"
-
+#include "al_recoder.h"
 #include <iostream>
 #include <cstdio>
 #include <chrono>
 #include <thread>
+
 // Data
 static ID3D11Device*            g_pd3dDevice = NULL;
 static ID3D11DeviceContext*     g_pd3dDeviceContext = NULL;
@@ -71,7 +72,8 @@ int setup(GUIWin32Context* context) {
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
-
+    ImGui::StyleColorsLight();
+    ImGui::StyleColorsClassic();
     ImGui_ImplWin32_Init(hwnd);
     ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
 
@@ -100,7 +102,8 @@ bool SanityCheck(bool debug) {
 void setupGUI(AudioContext& context) {
     al_ErrorInfo("Setting up GUI");
     AudioDeviceManager* deviceManager = new AudioDeviceManager;
-
+    auto mixer = new MixerComponent(&context);
+    GuiMain::AddComponent(new ControlElements(&context, mixer));
     GuiMain::AddComponent(new Toolbar(&context, deviceManager));
     GuiMain::AddComponent(new MixerComponent(&context));
 
@@ -120,14 +123,14 @@ int WinMain(  _In_ HINSTANCE hInstance,
               _In_ int       nShowCmd)
 {
 
+      
     GUIWin32Context context;
-
+    
     auto result = setup(&context);
     if(result != 0) {
         MessageBoxW(nullptr, L"Unable to create gui", nullptr, MB_OK);
         return 1;
     }
-
     SanityCheck(true);
     // Main loop
     bool done = false;
@@ -140,7 +143,6 @@ int WinMain(  _In_ HINSTANCE hInstance,
     using clock = std::chrono::steady_clock;
 
     auto next_frame = clock::now();
-
     while (!done)
     {
         MSG msg;
@@ -166,6 +168,9 @@ int WinMain(  _In_ HINSTANCE hInstance,
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
         GuiMain::Show();
+        showCut(&audioContext);
+        showEqualizer();
+        showLeveling();
 
         // Rendering
         ImGui::Render();

@@ -12,22 +12,24 @@
 #include <comdef.h>
 
 void ProjectFileListComponent::Show() {
-    if(ImGui::Begin("Projekt"), &visible, ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysAutoResize) {
+    if (!visible) { return; }
+    if(ImGui::Begin("Projekt", &visible, ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysAutoResize)) {
         auto& itemList = _context->manager->getItems();
         if(ImGui::BeginListBox("")) {
             int index = 0;
 
-            for(auto item : itemList) {
-                if(ImGui::Selectable(item->getProjectName().c_str())) {
-                    selectedItem = index;
+            for (int i = 0; i < itemList.size(); ++i) {
+                if(ImGui::Selectable(itemList[i]->getProjectName().c_str())) {
+                    selectedItem = i;
                 }
-                if(ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoDisableHover)) {
-                    ImGui::Text("Moving file");
-                    ImGui::SetDragDropPayload("FILE_DD", &selectedItem, sizeof(int));
-                    ImGui::EndDragDropSource();
-                }
+                if (i < itemList.size()) {
+					if(ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoDisableHover)) {
+						ImGui::Text("Moving file");
+						ImGui::SetDragDropPayload("FILE_DD", &i, sizeof(int));
+						ImGui::EndDragDropSource();
+					}
 
-                index++;
+                }
             }
             ImGui::EndListBox();
         }
@@ -41,7 +43,6 @@ void ProjectFileListComponent::Show() {
                 GuiMain::AddComponent(new FileInfoWindow(_context, itemList[selectedItem]->getFile()));
             }
         }
-        ImGui::End();
     }
-
+    ImGui::End();
 }

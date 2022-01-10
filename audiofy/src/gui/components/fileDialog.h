@@ -29,7 +29,8 @@ public:
 private:
     AudioContext* _context;
     FileItem _item;
-    bool _close = false;
+    bool _visible = true;
+
 };
 
 class ImportWindow : public IComponent {

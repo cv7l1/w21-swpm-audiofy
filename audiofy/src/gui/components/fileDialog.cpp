@@ -71,22 +71,22 @@ void ProjectAddWindow::Show() {
     char buf[MAX_PATH];
     sprintf(buf, "%ws", _item.getDisplayName());
 
-    if(_close) {
+    if(!_visible) {
         return;
     }
 
     ImGui::SetNextWindowSize(ImVec2(198, 88), ImGuiCond_FirstUseEver);
-    ImGui::Begin("Zu Projekt hinzufügen", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Begin("Zu Projekt hinzufügen", &_visible, ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::InputText("Name", buf, IM_ARRAYSIZE(buf));
 
     if(ImGui::Button("Abbrechen")) {
-        _close = true;
+        _visible = false;
     }
     if(ImGui::Button("Hinzufügen")) {
         std::wstring wide = std::wstring(_item.getDisplayName());
 
         _context->manager->AddFile(new AudioFile(_context->_decoder->loadAudioFile(_item.getFullFilePath()), _item,  std::string(wide.begin(), wide.end())));
-        _close = true;
+        _visible = false;
     }
     ImGui::End();
 }

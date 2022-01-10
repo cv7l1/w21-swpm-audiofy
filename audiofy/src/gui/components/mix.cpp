@@ -17,26 +17,31 @@ void showMixer() {
 
 }
 MixerComponent::MixerComponent(AudioContext* context) : _context(context), sequencer(context) {
-    AudioTrack* track = new AudioTrack;
-    track->positionStart = 0;
-    track->positionEnd = 10;
-
-
-    sequencer._tracks.emplace_back(track);
     for (auto& item : _context->manager->getItems()) {
         sequencer._tracks.emplace_back();
     }
      
     sequencer.frameMin = 0;
     sequencer.frameMax = 1000;
-    GuiMain::AddComponent(new ControlElements(_context, this));
 }
 void MixerComponent::Show() {
-    if(ImGui::Begin("Mixer"), &visible, ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysAutoResize) {
+    bool ret;
+    if (!visible) { return; }
+    if(ret = ImGui::Begin("Mixer", nullptr, ImGuiWindowFlags_::ImGuiWindowFlags_NoCollapse)) {
         static int selectedEntry = -1;
         static int firstFrame = 0;
         static bool expanded = false;
-
+        ImGui::Button("Add");
+        if (ImGui::BeginDragDropTarget()) {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("FILE_DD", 0)) {
+                if (payload->Data != nullptr) {
+                    int index = *(const int*)payload->Data;
+                    sequencer.Add(index);
+                }
+            }
+            ImGui::EndDragDropTarget();
+        }
+        ImGui::SameLine();
         if (ImGui::Button("Remix")) {
             auto& buffer = _context->_mixer->getOutputBuffer();
             if (buffer.getCurrentBufferSize() > 0) {
@@ -52,19 +57,6 @@ void MixerComponent::Show() {
                                ImSequencer::SEQUENCER_EDIT_STARTEND | ImSequencer::SEQUENCER_ADD |
                                ImSequencer::SEQUENCER_DEL | ImSequencer::SEQUENCER_COPYPASTE | (!_context->isPlaying ? ImSequencer::SEQUENCER_OPTIONS::SEQUENCER_CHANGE_FRAME : 0)
                                );
-
-
-        /*
-        if(ImGui::Button("Play")) {
-            isPlaying = true;
-            auto seekPos = currentPositionSec * _context->_player->getAudioFormat().sampleRate;
-
-            _context->_player->seekToSample(seekPos);
-            counter = 0;
-            _context->_player->play();
-
-        }
-        */
         ImGui::End();
     }
 }
@@ -185,20 +177,24 @@ void bufferTrackResample(AudioTrack* track) {
 void AudioSequencer::Add(int i) {
     _context->_player->pause();
     auto item = _context->manager->getItems()[i];
-
+    Add(item);
+}
+void AudioSequencer::Add(AudioFile* item) {
     auto track = new AudioTrack(item);
 
     track->positionStart = 0;
     track->positionEnd = (int)item->audioInfo->getLengthSeconds();
-
-    if(track->buffer.getCurrentBufferSize() == 0) {
-        try {
-            _context->_decoder->decodeAudioFile(track->file->audioInfo, track->buffer);
-            track->effectProcessor = new SoundProcessor(&track->buffer);
-        } catch(std::exception& e) {
-            return;
-        }
+    
+    if (track->buffer.getCurrentBufferSize() != 0) {
+        track->buffer.getRawData().clear();
     }
+
+	try {
+	    _context->_decoder->decodeAudioFile(track->file->audioInfo, track->buffer);
+		track->effectProcessor = new SoundProcessor(&track->buffer);
+	} catch(std::exception& e) {
+		return;
+	}
 
 	if (track->buffer.getAudioFormat().sampleRate != 44100) {
 		bufferTrackResample(track);
@@ -208,13 +204,17 @@ void AudioSequencer::Add(int i) {
     _tracks.emplace_back(track);
     _context->_mixer->mixTrack(track);
     
-    _context->_player->playAudioBuffer(_context->_mixer->getOutputBuffer());
+    _context->_player->playAudioBuffer(_context->_mixer->getOutputBuffer(), false);
 }
 
 void AudioSequencer::Del(int i) {
+    _tracks[i]->file->audioInfo = _context->_decoder->loadAudioFile(_tracks[i]->file->getFile().getFullFilePath());
+
+    _context->_mixer->remove(_tracks[i]);
     _tracks.erase(_tracks.begin() + i);
+    
     _context->_mixer->remixAll();
-    _context->_player->playAudioBuffer(_context->_mixer->getOutputBuffer());
+    _context->_player->playAudioBuffer(_context->_mixer->getOutputBuffer(), false);
 }
 
 void AudioSequencer::Duplicate(int i) {
@@ -242,24 +242,6 @@ void AudioSequencer::DoubleClick(int i) {
 }
 
 void AudioSequencer::CustomDraw(int index, ImDrawList* draw_list, const ImRect& rc, const ImRect& legendRect, const ImRect& clippingRect, const ImRect& legendClippingRect) {
-    /*
-    static const char* labels[] = { "Translation", "Rotation" , "Scale" };
-
-    rampEdit.mMax = ImVec2(float(frameMax), 1.f);
-    rampEdit.mMin = ImVec2(float(frameMin), 0.f);
-    draw_list->PushClipRect(legendClippingRect.Min, legendClippingRect.Max, true);
-    for (int i = 0; i < 3; i++)
-    {
-        ImVec2 pta(legendRect.Min.x + 30, legendRect.Min.y + i * 14.f);
-        ImVec2 ptb(legendRect.Max.x, legendRect.Min.y + (i + 1) * 14.f);
-        draw_list->AddText(pta, rampEdit.mbVisible[i] ? 0xFFFFFFFF : 0x80FFFFFF, labels[i]);
-        if (ImRect(pta, ptb).Contains(ImGui::GetMousePos()) && ImGui::IsMouseClicked(0))
-            rampEdit.mbVisible[i] = !rampEdit.mbVisible[i];
-    }
-    draw_list->PopClipRect();
-
-    ImGui::SetCursorScreenPos(rc.Min);
-    */
 }
 
 void AudioSequencer::CustomDrawCompact(int index, ImDrawList* draw_list, const ImRect& rc, const ImRect& clippingRect) {

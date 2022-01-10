@@ -7,7 +7,7 @@ file(GLOB_RECURSE audiolib_SRC "audiolib/platform/src/*.cpp")
 file(GLOB_RECURSE audiofy_SRC "audiofy/src/*.cpp")
 file(GLOB_RECURSE audiofy_HEADER "audiofy/src/*.h")
 
-add_library(imgui_win32_dx11_lib ${imgui_SRC})
+add_library(imgui_win32_dx11_lib ${imgui_SRC} )
 add_library(audiofy_lib ${audiolib_SRC})
 
 target_include_directories(audiofy_lib PUBLIC audiolib/vorbis)
@@ -34,7 +34,7 @@ target_include_directories(audiofy PUBLIC audiofy/include/soundtouch)
 target_link_directories(audiofy PUBLIC lib)
 target_link_libraries(audiofy comsuppw)
 target_link_libraries(audiofy Mfreadwrite.lib Mfplat.lib mfuuid.lib Pathcch.lib
-        Shlwapi.dll opengl32.lib)
+        Shlwapi.dll opengl32.lib mf.lib)
 target_link_directories(audiofy PUBLIC audiofy/lib)
 
 target_link_libraries(audiofy imgui_win32_dx11_lib)

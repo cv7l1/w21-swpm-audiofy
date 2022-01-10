@@ -12,7 +12,7 @@ DeviceListComponent::DeviceListComponent(AudioContext* context, AudioDeviceManag
 }
 void DeviceListComponent::Show() {
     if (!visible) { return; }
-    if(ImGui::Begin("Audio Devices"), &visible, ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysAutoResize) {
+    if(ImGui::Begin("Audio Devices", &visible, ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysAutoResize)) {
         if(currentDefaultDevice != nullptr) {
             auto name = currentDefaultDevice->getDeviceName();
             if(name.has_value()) {
@@ -21,7 +21,7 @@ void DeviceListComponent::Show() {
                 ImGui::Text( "Current default device has no name");
             }
         }
-        if(ImGui::BeginListBox("")) {
+        if(ImGui::BeginListBox("Devices")) {
             int index = 0;
             for(auto device : currentDeviceList) {
                 auto name = device.getDeviceName();
@@ -38,6 +38,7 @@ void DeviceListComponent::Show() {
             }
             ImGui::EndListBox();
             ImGui::SameLine();
+
             if(ImGui::Button("Update")) {
                 currentDeviceList = _deviceManager->getAudioDeviceList(AudioDeviceRole::Playback);
                 currentDefaultDevice = _deviceManager->getDefaultDevice(AudioDeviceRole::Playback);
@@ -53,6 +54,6 @@ void DeviceListComponent::Show() {
             }
 
         }
-        ImGui::End();
     }
+    ImGui::End();
 }
